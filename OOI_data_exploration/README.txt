@@ -100,7 +100,15 @@ Washington Shelf Surface Piercing Profiler Mooring(CE07SHSP)
 Washington Offshore Profiler Mooring(CE09OSPM) 
 
 ### OOI Nodes 
+A node is a section of a platform that contains one or more computers and power converters. Instruments on a platform are plugged into a node, which collects the instrument data internally and/or transmit the data externally. Some platforms contain a single node, like a glider. Other platforms have several nodes wired together. For example, a mooring that hosts a surface buoy, near-surface instrument frame, and seafloor multi-function node, each with a different set of instruments attached.
 
+OOI Net node designator 
+* [nsif] The Near-Surface Instrument Frame (or NSIF) is an instrumented cage suspended below a surface mooring (7m for Coastal moorings, 12m for Global moorings). The NSIF contains subsurface oceanographic instruments attached to multiple data concentrator logger (DCL) computers.
+* [buoy] A Surface Buoy is a type of buoy that floats on the sea surface providing buoyancy to support the mooring riser. Additionally, the surface buoy provides a platform for mounting atmospheric and ocean surface instruments and houses equipment for power generation and storage, data aggregation and recording, and two-way telemetry and GPS location. All surface moorings contain a surface buoy.
+* Seafloor Multi-Function Nodes (MFN) are found at the base of some surface moorings and act both as an anchor as well as a platform to affix instruments.
+* A Profiler is a structure that moves through the water column carrying instruments, that sample across the profiler’s depth range. Profilers either track along the mooring riser (wire-following profilers), or are tethered to a mooring-mounted winch that pays out line allowing the profiler to rises through the water column until fixed depth (shallow profilers & surface piercing profilers).
+* A Surface Piercing Profiler is a type of profiler that is tethered to a mooring-mounted winch at a fixed depth in the water column. As the winch pays out cable, the surface piercing profiler rises through the water column until the profiler pierces the sea surface. Instruments are affixed to the surface piercing profiler, allowing for the measurement of ocean processes at the thin surface layer.
+* A Wire-Following Profiler is a type of profiler that attaches to and moves along the mooring riser over a designated depth interval. Instruments are affixed to the wire-following profiler, allowing for sampling sub-surface ocean characteristics.
 
 ### Instrument Classes
 [**ADCPT**](https://oceanobservatories.org/instrument-series/adcpta/) - Teledyne RDI - WorkHorse  

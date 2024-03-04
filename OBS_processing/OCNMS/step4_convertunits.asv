@@ -1,0 +1,11 @@
+% convert SA CT and DO uM for OCNMS 
+
+clear all 
+close all 
+
+sn = 'MB042';
+
+cd('/Users/katehewett/Documents/LKH_output/OCNMS_processed/step2_sitestructs/hourly/')
+load(strcat(sn,'_2011_2023_hourly.mat'))
+
+DOuM = OXY(:,end)*(1000/32); 

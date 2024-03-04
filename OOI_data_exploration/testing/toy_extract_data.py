@@ -32,7 +32,7 @@ from  ooi_data_explorations.common import m2m_request, m2m_collect
 site = 'CE02SHSM'           # OOI Net site designator 
 node = 'RID27'              # OOI Net node designator
 sensor = '03-CTDBPC000'     # OOI Net sensor designator 
-method = 'telemetered'      # OOI Net data delivery method
+method = 'recovered'      # OOI Net data delivery method
 stream = 'ctdbp_cdef_dcl_instrument'  # OOI Net stream name
 start = '2019-04-01T00:00:00.000Z'  # data for spring 2019 ...
 #stop = '2019-09-30T23:59:59.999Z'   # ... through the beginning of fall

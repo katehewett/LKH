@@ -35,5 +35,4 @@ fs=16
 plt.rc('font', size=fs)
 fig = plt.figure(figsize=(18,10))
 
-plot(mdt, SP, color='#73210D', linewidth=2, alpha=0.8)
-
+ax1.plot(ds.time, SP.values, color='tab:blue', linewidth=2, alpha=0.8)

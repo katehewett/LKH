@@ -1,0 +1,83 @@
+% convert SA CT and DO uM for OCNMS 
+% USE GSW so add path 
+addpath(genpath('/Users/katehewett/Documents/MATLAB/gsw_matlab_v3_06_16'))
+
+clear all 
+close all 
+
+pYEAR = 2013; 
+
+sites = [{'MB015'},{'MB042'},{'CA015'},{'CA042'},{'KL015'},{'KL027'},...
+         {'TH015'},{'TH042'},{'CE015'},{'CE042'}];
+
+sites = {'CE042'};
+
+% hourly 
+for sdx = 1:length(sites)
+
+    sn = sites{sdx};
+    
+    fn = strcat(sn,'_2011_2023_hourly.mat');
+    
+    cd('/Users/katehewett/Documents/LKH_output/OCNMS_processed/step4_LOformat/hourly')
+    load(fn)
+
+end
+
+clearvars -except Z_est P CT SP DO_uM sdx sites sn timestamp_UTC pYEAR
+
+% isolate the year we want to plot 
+a = find(year(timestamp_UTC)~=pYEAR);
+CT(a,:) = []; 
+SP(a,:) = []; 
+DO_uM(a,:) = [];
+timestamp_UTC(a) = [];
+
+clear a 
+
+% for local times - get the year days 
+DV  = datevec(timestamp_UTC);  % [N x 6] array
+DV  = DV(:, 1:3);                % [N x 3] array, no time
+DV2 = DV;
+DV2(:, 2:3) = 0;                 % [N x 3], day before 01.Jan
+DV2  = DV2(:, 1:3);
+YDvec = cat(2, DV(:, 1), datenum(DV) - datenum(DV2));
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Calculate daily percentiles using arrayfun and accumarray
+percentiles = [2, 9, 25, 50, 75, 91, 98]; % Set your desired percentiles
+
+% Convert timestamps to numerical format using datenum
+dateNumeric = YDvec(:,2); 
+
+% Initialize arrays to store results
+uniqueDays = unique(dateNumeric);
+dailyPercentiles = nan(numel(uniqueDays), numel(percentiles));
+
+sampleCounts = nan(numel(uniqueDays), numel(percentiles)); % initialize output n
+
+% CALC SA percentiles 
+values = SP(:,end);  % bottom data!
+data = table(timestamp_UTC, values);
+
+% Calculate daily percentiles for each unique day
+for i = 1:numel(uniqueDays)
+    dayIndex = uniqueDays(i) == dateNumeric;
+    dailyPercentiles(i, :) = prctile(data.values(dayIndex), percentiles);
+    sampleCounts(i, :) = sum(~isnan(data.values(dayIndex,:))); 
+end
+
+% Convert to a table and add variable names
+
+percentileNames = arrayfun(@(p) [num2str(p) 'percentile'], percentiles, 'UniformOutput', false);
+dailyPercentilesTable = array2table(dailyPercentiles, 'VariableNames', percentileNames);
+
+X2 = [uniqueDays(:,:); flip(uniqueDays(:,:),1)];
+yconf = [dailyPercentiles(:,3),dailyPercentiles(:,5)]; 
+inBetween = [yconf(:,1); flip(yconf(:,2),1)];
+IQRa = fill(X2,inBetween,'g')
+
+
+
+

@@ -26,8 +26,8 @@ node = 'RID27'              # OOI Net node designator
 sensor = '03-CTDBPC000'     # OOI Net sensor designator
 stream = 'ctdbp_cdef_dcl_instrument'  # OOI Net stream name
 method = 'telemetered'      # OOI Net data delivery method
-level = 'nsif'              # local directory name, level below site
-instrmt = 'ctdbp'           # local directory name, instrument below level
+#level = 'nsif'              # local directory name, level below site
+#instrmt = 'ctdbp'           # local directory name, instrument below level
 
 # We are after telemetered data. Determine list of deployments and use the last, presumably currently active,
 # deployment to determine the start and end dates for our request.
@@ -35,3 +35,5 @@ vocab = get_vocabulary(site, node, sensor)[0]
 deployments = list_deployments(site, node, sensor)
 deploy = deployments[-1]
 start, stop = get_deployment_dates(site, node, sensor, deploy)
+
+
