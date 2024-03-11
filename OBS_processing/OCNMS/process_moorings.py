@@ -43,8 +43,6 @@ sn_name_dict = {
     'CA042':'Cape Alava 42m',
     'TH015':'Teahwhit Head 15m',
     'TH042':'Teahwhit Head 42m',
-    'TH015':'Teahwhit Head 15m',
-    'TH042':'Teahwhit Head 42m',
     'KL015':'Kalaloch 15m',
     'KL027':'Kalaloch 27m',
     'CE015':'Cape Elizabeth 15m',
@@ -70,7 +68,7 @@ for sn in sn_list:
     # i.e. in matlab: datenum(datetime(1970,01,01)) = 719529
     matlab_datetimes = mat_dict['timestamp_UTC']                               # an array of datenums from matlab 
     
-    # Question: If we save the timezone / then when we set up the dataset it saves 
+    # if save with the timezone when we set up the dataset it saves 
     # the time coordinate as an object and not a datetime index. Changed to remove 
     # utc = True, and then everything runs fine when saving xr.Dataset
     # tt = pd.to_datetime(matlab_datetimes-719529,unit='d',utc=True).round('s')  # datetime index
