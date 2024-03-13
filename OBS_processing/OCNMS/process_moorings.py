@@ -6,8 +6,10 @@ in xarray Datasets.
 
 Takes a few seconds to run on kmh's mac
 
-Kate: when get new 2024 data, will need to update & add so can place
-place straight to LO/obs . the naming changes + sometimes how the files are saved 
+Kate: (1) when get new 2024 data, will need to update & add so can place
+place straight to LO/obs . the naming changes + sometimes how the files are saved too
+(2) might want to add flags so that can tell when removed data that was flagged suspect. 
+eg the late deployment O2 data from 2021 at MB042 
 
 """
 
