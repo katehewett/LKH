@@ -3,7 +3,7 @@
 % Step1 of preQC:
 % this script loads processed data from Brandy Cervantes google drive, and
 % then checks for duplicate dates in the time vector. 
-% If there are no dups then it removes dates prior to 2013; 
+% If there are no dups then it removes dates prior to 2011; 
 % Removes sites that are deeper than 42m (b/c sites existed prior to the 
 % to the long LO run (2013 start) and current model runs 2017 - present.
 % Steps here include renaming 'time' + oxy + temp. And we calc JD + yd

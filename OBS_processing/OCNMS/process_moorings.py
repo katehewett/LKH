@@ -2,12 +2,14 @@
 Code to process the ocnms mooring data from 2011 - 2023 
 
 This imports pre-processed hourly matlab data and places to LO format 
-in xarray Datasets.
+in xarray Datasets, and then saves as a netcdf.
 
-Takes a few seconds to run on kmh's mac
+Takes a ~10 seconds to run on Kate's mac
 
-Kate: (1) when get new 2024 data, will need to update & add so can place
-place straight to LO/obs . the naming changes + sometimes how the files are saved too
+todos: (1) when get new 2024 data, will need to update & add so can place
+place straight to LO/obs/... the naming of files from OCNMS changes 
++ sometimes how the files are saved too. This is a work in progress, 
+but someone can run this code after minimal matlab processing
 (2) might want to add flags so that can tell when removed data that was flagged suspect. 
 eg the late deployment O2 data from 2021 at MB042 
 
