@@ -1,0 +1,18 @@
+import pandas as pd
+from numba import njit
+
+## 
+series = pd.Series([4, 3, 5, 2, 6, 9, 1, 2, 9, 3, 4])  # Series of 4, 3, 5, 2, 6
+
+#DataFrame.rolling(window, min_periods=None, center=False, win_type=None, on=None, axis=_NoDefault.no_default, closed=None, step=None, method='single')
+
+rw = series.rolling(3,min_periods=3,center=True)
+
+pmean = rw.mean()
+p2 = rw.quantile(0.02)
+p25 = rw.quantile(0.25)
+p50 = rw.quantile(0.5)
+p75 = rw.quantile(0.75)
+p92 = rw.quantile(0.98)
+pmin = rw.min()
+pmax = rw.max()

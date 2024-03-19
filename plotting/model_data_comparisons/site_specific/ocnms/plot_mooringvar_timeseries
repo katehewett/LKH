@@ -1,0 +1,144 @@
+# This plots OCNMS moorings and LO mooring extraction timeseries
+# of oxygen for "midshelf" locations 42m and 27m 
+
+# imports
+from lo_tools import Lfun, zfun, zrfun
+from lo_tools import plotting_functions as pfun
+
+#import sys 
+import xarray as xr
+import numpy as np
+#import netCDF4 as nc
+import os 
+
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+import matplotlib.dates as mdates
+from matplotlib.dates import DateFormatter
+#import matplotlib.dates as mdates
+from datetime import datetime
+from datetime import time
+import pandas as pd
+
+## OCNMS mooring time series 
+Ldir = Lfun.Lstart()
+
+# processed data location
+source = 'ocnms'
+otype = 'moor' 
+data_dir = Ldir['LOo'] / 'obs' / source / otype
+
+model_dir = Ldir['LOo'] / 'extract/cas7_t0_x4b/moor/OCNMS_moorings_current' # update with tags
+
+sn_name_dict = {
+    'MB042':0,
+    'CA042':1,
+    'TH042':2,
+    'KL027':3,
+    'CE042':4,
+}
+
+numyrs = 5 # 2013 - 2017
+sn_list = list(sn_name_dict.keys())
+numsites = len(sn_list)
+
+# update with input tags for start and stop 
+# make some datetimes for plotting 
+mdates1 = pd.date_range(start='2013-05-01',end='2017-05-01', freq='AS-MAY')
+mdates2 = pd.date_range(start='2013-11-01',end='2017-11-01', freq='AS-NOV')
+
+# initialize plot 
+plt.close('all')
+fs=12
+plt.rc('font', size=fs)
+fig = plt.figure(figsize=(16,8))
+
+for sn in sn_list:
+    for ii in range(0,numyrs):
+        plt.subplot2grid((numsites,numyrs),(sn_name_dict[sn],ii),colspan=1,rowspan=1)
+        
+for sn in sn_list:
+    print(sn)
+    in_fn = data_dir / (sn + '_2011_2023_hourly.nc')
+    
+    ds = xr.open_dataset(in_fn, decode_times=True)
+    
+    # check for hourly times < need to make these next few steps better 
+    # by def'n a data frame in rolling to sample time
+    df = pd.DataFrame({'times':ds['time']})
+    df['time_diff'] = df['times'].diff()
+    td = np.unique(df.time_diff)
+    if np.unique(df.time_diff[1:-1] == pd.Timedelta('1 hour')): 
+        print('all good')
+
+    a = pd.to_datetime(ds.time.values)
+    df['hours'] = a.hour
+    
+    df['bOXY'] = ds['DO (uM)'].values[:,-1]
+    
+    # extract at 20h00 UTC 
+    time20 = a[np.where(df.hours==20)]
+    bOXY = df.bOXY.values[np.where(df.hours==20)]
+    
+    for ii in range(0,numyrs):                
+        axnum = sn_name_dict[sn]*numyrs+ii
+        print(axnum)
+        plt.gcf().axes[axnum].plot(df['times'],df['bOXY'],color = 'dodgerblue',marker='none',linestyle='-',linewidth=3,label ='ocnms')
+        
+        #add model data 
+        in_fn = model_dir / (sn + '_' + str(mdates2[ii].year) + '.01.01_'+ str(mdates2[ii].year) + '.12.31.nc')
+        if os.path.isfile(in_fn):
+            ds2 = xr.open_dataset(in_fn)
+            oxygen = ds2['oxygen']
+            LOoxy = np.nanmean(oxygen[:,1:2],axis=1)
+            ot = ds2['ocean_time'].values[:]
+        
+            plt.gcf().axes[axnum].plot(ot,LOoxy,color = 'crimson',marker='none',linestyle='-',linewidth=2,alpha=0.7,label ='cas7_t0_x4b')
+        
+        plt.gcf().axes[axnum].set_title(str(axnum))
+        
+        plt.gcf().axes[axnum].set_ylim([0,300])
+        plt.gcf().axes[axnum].set_yticks(np.arange(0,301,50), minor=True) # 0:50:300
+        plt.gcf().axes[axnum].set_yticks(np.arange(0,301,100), minor=False) # 0:50:300
+        
+        plt.gcf().axes[axnum].set_xlim([mdates1[ii],mdates2[ii]])
+        mdp = pd.date_range(start=mdates1[ii],end=mdates2[ii],freq='MS')
+        plt.gcf().axes[axnum].set_xticks(mdp)  
+        date_form = DateFormatter("%m")
+        plt.gcf().axes[axnum].xaxis.set_major_formatter(date_form)
+        
+        if axnum == 0 or axnum == 5 or axnum == 10 or axnum == 15 or axnum == 20:
+            plt.gcf().axes[axnum].set_title(sn+': '+str(mdates2[ii].year))
+            plt.gcf().axes[axnum].set_ylabel('bottom DO uM')
+        elif axnum == 4 or axnum == 9 or axnum == 14 or axnum == 19 or axnum == 24:
+            plt.gcf().axes[axnum].yaxis.tick_right()
+            plt.gcf().axes[axnum].set_title(mdates2[ii].year)
+        else:
+            plt.gcf().axes[axnum].set_yticklabels([])
+            plt.gcf().axes[axnum].set_title(mdates2[ii].year)
+        
+        if axnum == 22:   
+            plt.gcf().axes[axnum].set_xlabel('month of year')
+            
+        plt.gcf().tight_layout()
+        
+
+# have to do backwards or else if remove 8 first then 9 becomes 8 and so on        
+plt.gcf().axes[9].remove()   # no obs data at CA042 in 2016 / 2017
+plt.gcf().axes[8].remove() 
+
+plt.gcf().axes[7].legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+
+fig_nm = '/Users/katehewett/Documents/LKH_output/draft_ocnms_cas7_t0_x4b.png'
+plt.gcf().savefig(fig_nm)
+
+
+
+
+        
+    
+    
+
+    
+    
+
