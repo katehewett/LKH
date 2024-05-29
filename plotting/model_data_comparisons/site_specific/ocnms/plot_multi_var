@@ -78,8 +78,10 @@ for sn in sn_list:
     
     # extract at 20h00 UTC 
     time20 = a[np.where(df.hours==20)]
-    bOXY = df.bOXY.values[np.where(df.hours==20)]
     
+    d20 = pd.DataFrame({'times':time20})
+    d20['OXY'] = df.bOXY.values[np.where(df.hours==20)]
+
     for ii in range(0,numyrs):                
         axnum = sn_name_dict[sn]*numyrs+ii
         print(axnum)

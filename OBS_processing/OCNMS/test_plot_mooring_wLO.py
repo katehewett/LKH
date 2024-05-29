@@ -27,45 +27,21 @@ data_dir = Ldir['LOo'] / 'obs' / source / otype
 
 # named in this order for plotting 
 sn_name_dict = {
-    'MB042':'Makah Bay 42m',
-    'MB015':'Makah Bay 15m',
-    'CA042':'Cape Alava 42m',
-    'CA015':'Cape Alava 15m',
-    'TH042':'Teahwhit Head 42m',
-    'TH015':'Teahwhit Head 15m',
-    'KL027':'Kalaloch 27m',
-    'KL015':'Kalaloch 15m',
-    'CE042':'Cape Elizabeth 42m',
-    'CE015':'Cape Elizabeth 15m'  
+    'MB042':'Makah Bay 42m'
 }
 
 mdates = pd.date_range('2011-01-01', periods=14, freq='YS')
+
+pd.Timestamp(ds.time.values[]).hour
+
+mask_dict = {}
+mask_dict[2014] = (yrho >=49) & (yrho < 50) & (xrho < -125.4) & (h <= dmax) & (mr == 1)
 
 # PLOTTING
 plt.close('all')
 fs=12
 plt.rc('font', size=fs)
 fig = plt.figure(figsize=(16,8))
-
-# add mooring locations and labels to map 
-axmap = plt.subplot2grid((5,3),(0,2),colspan=1,rowspan=5)
-pfun.add_coast(axmap,color='grey')
-pfun.dar(axmap)
-axmap.axis([-125, -123, 47, 49])
-
-axmap.text(-124.64,48.3,'Makah Bay',color='Black',weight='bold',alpha=0.8)
-axmap.text(-124.67,48.13,'Cape Alava',color='Black',weight='bold',alpha=0.8)
-axmap.text(-124.52,47.85,'Teahwhit Head',color='Black',weight='bold',alpha=0.8)
-axmap.text(-124.35,47.57,'Kalaloch',color='Black',weight='bold',alpha=0.8)
-axmap.text(-124.25,47.32,'Cape Elizabeth',color='Black',weight='bold',alpha=0.8)
-
-axmap.set_xticks([-125,-124.5,-124,-123.5,-123])
-axmap.set_xticklabels([-125,'',-124,'',-123])
-axmap.set_yticks([47, 47.5, 48, 48.5, 49])
-axmap.set_yticklabels([47, '', 48, '', 49])
-axmap.set_xlabel('Longitude')
-axmap.set_ylabel('Latitude')
-axmap.set_title('OCNMS moorings')
                   
 # plot data available for recent processed data 
 sn_list = list(sn_name_dict.keys())

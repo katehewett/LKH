@@ -1,13 +1,6 @@
 """
-Code calculates SA and SIG0 + N2
-Locates position of N2 max 
-Then calculates SML and BML using temp. threshold method 
-Flag first instance where:
-del T(z_rho) = T(z_rho) - T0 > -0.05 
-where T0 is either the surface(bottom)-most temperature value
-
-this value of z_rho is saved, and the thickness of the SML(BML) 
-is estimated using the edge z_w value just below the flagged z_rho 
+Code calculates SA and SIG0 + N2 and dT/dz
+Locates position of N2 max and dT/dz max
 
 Note: this code was writted to work on nc-files extracted using 
 LO/extract/box/extract_box_chunks.py
@@ -15,17 +8,23 @@ which have grid info saved. If re-write can get grid info using
 a history file and G, S, T = zrfun.get_basic_info(), which can then 
 calc z_rho and z_w 
 
-We are exploring the shelf_box job here 
-Want to calculate the SML BML and location of max N2 
+We are exploring the NHL_transect job here 
 for cas7_t0_x4b years 2014 - 2019 
 (2019 = last full year processed; 2013 skipped for now)
 
 Todos: write flags so can enter 'box' or 'moor' and the filename etc 
 so can use command line 
 
+All years 
+Time to load data = 0.09 sec
+Time to extract data = 0.10 sec
+Time to calc gsw vars = 72.00 sec
+Time to calc N2 = 4.59 sec
+
 """
 
 import xarray as xr
+from xarray import open_dataset, Dataset
 import numpy as np
 import gsw
 from lo_tools import Lfun, zrfun
@@ -42,17 +41,13 @@ import cmcrameri.cm as cmc
 
 Ldir = Lfun.Lstart()
 
-fnn = 'shelf_box_2014.01.01_2015.12.31'
-#fnn = 'shelf_box_2016.01.01_2017.12.31'
-#fnn = 'shelf_box_2018.01.01_2019.12.31'
+fnn = 'NHL_transect_2014.01.01_2019.12.31'
 fn_in = Ldir['LOo'] / 'extract' / 'cas7_t0_x4b' / 'box' / (fnn + '_chunks') / (fnn + '.nc')
 
-out_dir = Ldir['parent'] / 'LKH_output'/ 'calc_mixed_layer_N2' / 'shelf_box' / fnn
-temp_dir = out_dir / ('temp_' + fnn)
+out_dir = Ldir['parent'] / 'LKH_output'/ 'calc_mixed_layer_N2' / 'NHL' / fnn
 Lfun.make_dir(out_dir, clean=True)
-Lfun.make_dir(temp_dir, clean=True)
 
-testing = True
+testing = False
     
 # 1. Get some grid information and calc SA + SIG0
 tt0 = time()
@@ -77,6 +72,7 @@ if testing:
     
 zsurf = z_w[:,-1,:,:]
 NT, NZ, NETA, NXI = tempC.shape
+NW = z_w.shape[1]
 
 print('Time to extract data = %0.2f sec' % (time()-tt0))
 sys.stdout.flush()
@@ -105,9 +101,10 @@ print('Time to calc gsw vars = %0.2f sec' % (time()-tt0))
 sys.stdout.flush()
 
 # 4. calc N2 and find max N2 position
+tt0 = time()
 g = 9.8     
-# po = 1024
-po = round(np.nanmean(SIG0)+1000,0)
+po = 1024
+#po = round(np.nanmean(SIG0)+1000,0)
     
 dp = np.diff(SIG0,axis=1)
 dz = np.diff(z_rho,axis=1)
@@ -119,52 +116,67 @@ C = np.argmax(N2,axis=1,keepdims=True)
 z_N2max = np.take_along_axis(z_w.values,C+1,axis=1)
 val_N2max = np.take_along_axis(N2,C,axis=1)
 
+n = np.nan * np.ones(z_w.shape) 
+n[:,1:NW-1,:,:] = N2
+
 print('Time to calc N2 = %0.2f sec' % (time()-tt0))
 sys.stdout.flush()
+
+# 4. calc dT du dv dz's : u and v are on rho points
+# plus shear and Rig
+tt0 = time()
+du = np.diff(ds.u.values,axis=1)
+dv = np.diff(ds.v.values,axis=1)
+dT = np.diff(CT,axis=1)
+dS = np.diff(SA,axis=1)
+dudz = du/dz
+dvdz = dv/dz
+dtdz = dT/dz
+
+S2 = np.square(dudz) + np.square(dvdz)
+zw = ds.z_w.values[:,1:NW-1,:,:]
+
+s = np.nan * np.ones(z_w.shape) 
+s[:,1:NW-1,:,:] = S2
+
+#Rig = N2/S2
+#Rig_N = np.log10(Rig/0.25)
+
+print('Time to calc dzs and S2 = %0.2f sec' % (time()-tt0))
+sys.stdout.flush()
  
-# 4. Calc SML using temp threshold 
-tt0 = time()       
-CTf = np.flip(CT,axis=1)             # flip s/t data sits surface:bottom  
-z_wf = np.flip(z_w,axis=1)
-z_rhof = np.flip(z_rho,axis=1)
-             
-tt = CTf[:,0,:,:]                    # surface-most values 
-t0s = tt[:,np.newaxis,:,:]
+#5. put in a dataset 
+dsave = True
+if dsave:     
+    ds1 = Dataset()
 
-dT_s = np.round(CTf-t0s,2)           # thresholds
-Tbool = dT_s>-0.05
+    ds1['ocean_time'] = ds.ocean_time
+    ds1['z_rho'] = ds.z_rho
+    ds1['z_w'] = ds.z_w
+    ds1['h'] = ds.h
+    ds1['mask_rho'] = ds.mask_rho
+    ds1['lat'] = ds.lat_rho
+    ds1['lon'] = ds.lon_rho
 
-# grab the first index where false 
-# keep dims = True makes grabbing the z variables way easier 
-A = np.argmax(Tbool==False,axis=1,keepdims = True)     # read across the depth layers 
+    ds1['SIG0'] = (('ocean_time', 's_rho', 'eta_rho', 'xi_rho'),SIG0,{'units':'kg/m3 - 1000','long_name':'potential density anomaly'})
+    ds1['SA'] = (('ocean_time', 's_rho', 'eta_rho', 'xi_rho'),SA,{'units':'g/kg','long_name':'Absolute Salinity'})
+    ds1['CT'] = (('ocean_time', 's_rho', 'eta_rho', 'xi_rho'),CT,{'units':'degrees C','long_name':'Conservative Temperature'})
 
-Ti_zrho = np.take_along_axis(z_rhof.values,A-1,axis=1) # A grabs the first false, so go up one rho-point
-Ti_zw = np.take_along_axis(z_wf.values,A,axis=1)       # and this is the z_w (assumed depth of SML using T thresh)
-val_Tsml = np.take_along_axis(CTf,A-1,axis=1)
+    ds1['N2'] = (('ocean_time', 's_w', 'eta_rho', 'xi_rho'),n,{'units':'radians/s2','long_name':'buoyancy frequency'})
+    ds1['N2_max'] = (('ocean_time', 'eta_rho', 'xi_rho'),val_N2max.squeeze(),{'units':'radians/s2','long_name':'value max buoyancy frequency'})
+    ds1['zN2_max'] = (('ocean_time', 'eta_rho', 'xi_rho'),z_N2max.squeeze(),{'units':'radians/s2','long_name':'location of max buoyancy frequency'})
 
-zz = zsurf.values[:,np.newaxis,:,:]                    # now calc the depth of the SML
-D_sml = zz + np.abs(Ti_zw) 
-
-print('Time to calc SML for 5 timestamps = %0.2f sec' % (time()-tt0))
-sys.stdout.flush()    
-
-ds['SIG0'] = (('ocean_time', 's_rho', 'eta_rho', 'xi_rho'),SIG0,{'units':'kg/m3 - 1000','long_name':'potential density anomaly'})
-ds['SA'] = (('ocean_time', 's_rho', 'eta_rho', 'xi_rho'),SA,{'units':'g/kg','long_name':'Absolute Salinity'})
-ds['CT'] = (('ocean_time', 's_rho', 'eta_rho', 'xi_rho'),CT,{'units':'degrees C','long_name':'Conservative Temperature'})
-
-ds['N2'] = (('ocean_time', 's_rho', 'eta_rho', 'xi_rho'),N2,{'units':'radians/s2','long_name':'buoyancy frequency'})
-ds['N2_max'] = (('ocean_time', 'eta_rho', 'xi_rho'),val_N2max.squeeze(),{'units':'radians/s2','long_name':'value max buoyancy frequency'})
-ds['zN2_max'] = (('ocean_time', 'eta_rho', 'xi_rho'),z_N2max.squeeze(),{'units':'radians/s2','long_name':'location of max buoyancy frequency'})
-
-ds['SML_thickness'] = (('ocean_time', 'eta_rho', 'xi_rho'),D_sml.squeeze(),{'units':'m','long_name':'thickness of SML'})
-ds['SML_zrho'] = (('ocean_time', 'eta_rho', 'xi_rho'),Ti_zrho.squeeze(),{'units':'m','long_name':'depth of SML at rho-point'})
-ds['SML_zw'] = (('ocean_time', 'eta_rho', 'xi_rho'),Ti_zw.squeeze(),{'units':'m','long_name':'depth of SML edge'})
-ds['SML_Tval'] = (('ocean_time', 'eta_rho', 'xi_rho'),val_Tsml.squeeze(),{'units':'degrees C','long_name':'temp at SML_zrho'})
-
+    ds1['S2'] = (('ocean_time', 's_w', 'eta_rho', 'xi_rho'),s,{'units':'s^-2','long_name':'vertical shear squared'})
+    
+    fn_s = fnn + '_N2_S2.nc'
+    this_fn = out_dir / (fn_s)
+    ds1.to_netcdf(this_fn)
+    
 yplotting = False  
 # 5: check SML + N2 plotting 
 tt0 = time()
-idx = [120,80]
+#idx = [1,50]
+idx = [1,70]
 if yplotting==True:
     # initialize plot 
     plt.close('all')
@@ -184,15 +196,17 @@ if yplotting==True:
        
     axnum = 1 
     N2plot = plt.gcf().axes[axnum].plot(N2[-1,:,idx[0],idx[1]],z_w.values[-1,1:-1,idx[0],idx[1]],color='pink',marker='x') 
-    plt.gcf().axes[axnum].axhline(y = Ti_zw[-1,:,idx[0],idx[1]], color = 'blue', label = 'axvline - full height')
+    plt.gcf().axes[axnum].plot(n[-1,:,idx[0],idx[1]],z_w.values[-1,:,idx[0],idx[1]],color='blue',marker='x') 
     plt.gcf().axes[axnum].plot(val_N2max[-1,:,idx[0],idx[1]],z_N2max[-1,:,idx[0],idx[1]],color='black',marker='*')
     plt.gcf().axes[axnum].set_title('N2')
-    plt.gcf().axes[axnum].set_ylabel('depth m')
     
     axnum = 2 
-    Tplot = plt.gcf().axes[axnum].plot(CT[-1,:,idx[0],idx[1]],z_rho[-1,:,idx[0],idx[1]],color='pink',marker='x')     
-    plt.gcf().axes[axnum].plot(val_Tsml[-1,:,idx[0],idx[1]],Ti_zrho[-1,:,idx[0],idx[1]],color='black',marker='*')
-    plt.gcf().axes[axnum].axhline(y = Ti_zw[-1,:,idx[0],idx[1]], color = 'r', label = 'axvline - full height')
+    Tplot = plt.gcf().axes[axnum].plot(S2[-1,:,idx[0],idx[1]],zw[-1,:,idx[0],idx[1]],color='pink',marker='x')
+    plt.gcf().axes[axnum].set_title('S2')
+    
+    axnum = 3 
+    Tplot = plt.gcf().axes[axnum].plot(R,zw[-1,:,idx[0],idx[1]],color='pink',marker='x')
+    plt.gcf().axes[axnum].set_title('Rig')
     
     print('Time to plot data = %0.2f sec' % (time()-tt0))
     sys.stdout.flush() 
