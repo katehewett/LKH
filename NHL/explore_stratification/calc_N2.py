@@ -45,10 +45,30 @@ fn_in = in_dir / (fn_s)
 
 ds = xr.open_dataset(fn_in, decode_times=False)
 
-NT, NZ, NETA, NXI = ds.CT.shape
+
+# 1. Get some grid information and calc SA + SIG0
+tt0 = time()
+idx = 1     # we are taking the data from the lat nearest 44.65, but keep dimensions
+
+ds = xr.open_dataset(fn_in, decode_times=False)
+print('Time to load data = %0.2f sec' % (time()-tt0))
+
+lat = np.expand_dims(ds.lat_rho[idx,:],axis=0) 
+lon = np.expand_dims(ds.lon_rho[idx,:],axis=0)
+h = np.expand_dims(ds.h.values[idx,:],axis=0)
+mask_rho = np.expand_dims(ds.mask_rho[idx,:],axis=0)
+
+z_w = np.expand_dims(ds.z_w[:,:,idx,:],axis=2) 
+z_rho = np.expand_dims(ds.z_rho[idx,:],axis=2)  
+tempC = np.expand_dims(ds.CT[idx,:],axis=2)  
+
+SP = ds.salt
+NT, NZ, NETA, NXI = ds.CT.shape 
 NW = ds.z_w.shape[1]
 
 df = pd.DataFrame({'times':ds['ocean_time']})
+
+
 
 
 
