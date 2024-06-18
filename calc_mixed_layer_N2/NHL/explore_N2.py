@@ -12,9 +12,6 @@ We are exploring the NHL_transect job here
 for cas7_t0_x4b years 2014 - 2019 
 (2019 = last full year processed; 2013 skipped for now)
 
-Todos: write flags so can enter 'box' or 'moor' and the filename etc 
-so can use command line 
-
 All years 
 Time to load data = 0.09 sec
 Time to extract data = 0.10 sec
@@ -56,5 +53,5 @@ NW = ds.z_w.shape[1]
 
 df = pd.DataFrame({'times':ds['ocean_time']})
 
-K@tmunch44
+
 
