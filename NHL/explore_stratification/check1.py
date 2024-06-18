@@ -43,7 +43,6 @@ SIG0 = ds2['SIG0'][200,-1,:,:].squeeze()
 
 ot = ds['ocean_time'].values[:] # this is years since day 1 of extraction ot[0] = 0 and is 2014 1 1 at 12noon 
 
-plt.close('all')
 fig = plt.figure(figsize=(16,8))
 ax1 = fig.add_subplot(111)
 
@@ -56,8 +55,8 @@ plt.plot(SIG0)
 
 
 # SIG0  pcolormesh
-X = ot 
-Y = ds2['z_rho'][200,-1,:,:].squeeze()
+X = ds2.lon_rho.values
+Y = ds2['z_rho'][200,:,:,:].squeeze()
 C = ds2['SIG0'][200,:,:,:].squeeze()
 fig3,ax3 = plt.subplots()
-ax3.pcolormesh(X,Y,C,vmin = 17, vmax = 27)
+ax3.pcolormesh(X,Y,C,vmin = 17.5, vmax = 27)
