@@ -1,6 +1,6 @@
 """
-Code calculates SA and SIG0 + N2 and dT/dz
-Locates position of N2 max and dT/dz max
+Code calculates mixed layer and pycnocline information 
+Locates position of dpdz max and dT/dz max
 
 Note: this code was writted to work on nc-files extracted using 
 LO/extract/box/extract_box_chunks.py
