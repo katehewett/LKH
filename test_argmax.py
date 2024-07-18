@@ -1,6 +1,7 @@
 """
 argmax w/ take_along_axis example 
-I used a history file here, see line 22
+I used a history file 
+takes ~3-5 seconds on personal mac to run this code
 
 """
 import xarray as xr
