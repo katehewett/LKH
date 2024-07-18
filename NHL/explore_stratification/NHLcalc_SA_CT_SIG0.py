@@ -73,6 +73,7 @@ P = gsw.p_from_z(z_rho,lat)
 SA = gsw.SA_from_SP(SP, P, lon, lat)
 CT = gsw.CT_from_pt(SA, tempC)
 SIG0 = gsw.sigma0(SA,CT)   
+SPICE0 = gsw.spiciness0(SA,CT)
 
 print('Time to calc gsw vars = %0.2f sec' % (time()-tt0))
 sys.stdout.flush()
@@ -121,6 +122,10 @@ if dsave:
     ds1['SIG0'] = (('ocean_time', 's_rho', 'eta_rho', 'xi_rho'), np.nan*np.ones((NT, NZ, NR, NC)))
     ds1.SIG0.attrs = {'units':'kg/m3 - 1000','long_name':'potential density anomaly'}
     ds1.SIG0.values = SIG0
+    
+    ds1['SPICE0'] = (('ocean_time', 's_rho', 'eta_rho', 'xi_rho'), np.nan*np.ones((NT, NZ, NR, NC)))
+    ds1.SPICE0.attrs = {'units':'kg/m3','long_name':'spiciness'}
+    ds1.SPICE0.values = SPICE0
     
     ds1['SA'] = (('ocean_time', 's_rho', 'eta_rho', 'xi_rho'), np.nan*np.ones((NT, NZ, NR, NC)))
     ds1.SA.attrs = {'units':'g/kg','long_name':'Absolute Salinity'}

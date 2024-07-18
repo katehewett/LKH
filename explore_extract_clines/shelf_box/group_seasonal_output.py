@@ -1,8 +1,11 @@
 '''
-plotting seasonal maps of 
-sml 
-N2max + depth 
-
+Run first, before plotting seasonal maps. 
+This code makes seasonal groupings <e.g. montly avgs> 
+of data produced from extract_clines.py 
+Need user inputs: 
+variable <var> we want to <average> and then
+frequency to group <monthly first> and it will save a small 
+file to then plot seasonal maps of N2max, etc.  
 
 
 '''
@@ -27,7 +30,7 @@ import matplotlib.dates as mdates
 from datetime import datetime
 import pandas as pd
 
-
+        
 tt0 = time()
 
 Ldir = Lfun.Lstart()
@@ -99,41 +102,3 @@ for ydx in range(0,numyrs):
         varmean[ii] = vm
         del masked_data
         
-    if fig_dict[yr_list[ydx]][0]==1:
-        fig1
-    elif fig_dict[yr_list[ydx]][0]==2:
-        fig2
-    
-    # plot each months map, 13th column is saved for colorbar and text 
-    for ii in range(1,13): 
-        axnum = ii-1 
-
-        ax = plt.subplot2grid((4,13), (fig_dict[yr_list[ydx]][1],axnum), colspan=1,rowspan=1)
-        pfun.add_coast(ax)
-        pfun.dar(ax)
-        ax.axis([-127.5, -123.5, 43, 50])
-        ax.contour(xrho,yrho,h, [200],colors=['black'], linewidths=1, linestyles='solid',alpha=0.4)
-        ax.set_xticks([-127.5, -125, -123.5])
-        ax.set_title(mo_list[axnum]+' '+yr_list[ydx])
-        #axw.grid(True)
-        
-        if ii<12 and ii!=1: 
-            ax.yaxis.set_ticklabels([])
-        if ii == 12:
-            ax.yaxis.tick_right()
-        if int(yr_list[ydx]) != 2017 | int(yr_list[ydx]) != 2021:
-            ax.xaxis.set_ticklabels([])
-
-        smin = 10 #math.floor(np.min(var))
-        smax = 150 #math.ceil(np.max(var))
-        slevels = np.arange(smin,smax,0.5)
-        smap=cmc.roma_r.with_extremes(under='Navy',over='Maroon')
-        
-        cpm = ax.contourf(xrho, yrho, varmean[ii],slevels,cmap=smap,extend = "both") 
-        
-        
-        plt.gcf().tight_layout()
-
-
-
-
