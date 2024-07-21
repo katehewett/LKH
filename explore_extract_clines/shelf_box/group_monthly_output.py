@@ -1,18 +1,20 @@
 '''
-Run this code first, before plotting seasonal maps. 
-This code makes seasonal groupings <e.g. montly avgs> 
+Option to run this code first before plotting <monthly/seasonal> maps
+of data produced by extract/box or clines.
+This code will make seasonal groupings <e.g. montly avgs> 
 of data produced from extract_clines.py 
 
 Right now this code will group data by month, 
 and perform stat_type that we input: 
-average, p50, p25, p75
+basic = mean "average" std and var
 
 It will save a smaller pickled file for that variable
 
 !! code assumes extracted full years were saved XXXX.01.01 - XXXX.12.31 !! 
 
-run group_seasonal_output -gtx cas7_t0_x4b -y0 2014 -y1 2017 -st average -mvar zDGmax -stat average -job shelf_box -test True
+run group_monthly_output -gtx cas7_t0_x4b -y0 2014 -y1 2015 -mvar zDGmax -stat basic -job shelf_box -test True
 
+takes ~ 1minute to do 2 years 
 '''
 
 # imports
@@ -70,9 +72,8 @@ yr_list = [year for year in range(int(args.ys0), int(args.ys1)+1)]
 numyrs = len(yr_list)
 
 # name the output file where  seasonal dicts will be dumped
-#dd_str = args.ys0 + '_' + Ldir['ys1']
-#bb_str = '_'     # leaving this so can update to have other types of clines later in gtags
-fn_o = Ldir['parent'] / 'LKH_output' / 'explore_extract_clines' / args.gtagex / args.job / 'seasonal'
+fn_o = Ldir['parent'] / 'LKH_output' / 'explore_extract_clines' / args.gtagex / args.job / 'monthly' / args.variable
+Lfun.make_dir(fn_o, clean=True)
 
 for ydx in range(0,numyrs): 
     # inputs 
@@ -102,36 +103,83 @@ for ydx in range(0,numyrs):
     mmonth = ot.month
     myear = ot.year
     
-    if args.stat_type == 'average':
-        pn_o = args.job+'_monthly_'+args.stat_type+'_'+str(yr_list[ydx])+'.txt'
-        picklepath = fn_o/pn_o
-        
-        # if monthly & stats = avg, initialize and take avgs
+    if args.stat_type == 'basic':
+        # set output path picklepath and pickled filename pn_o
+        pn_m = args.variable+'_monthly_average_'+str(yr_list[ydx])+'.txt'
+        pn_s = args.variable+'_monthly_std_'+str(yr_list[ydx])+'.txt'
+        pn_v = args.variable+'_monthly_var_'+str(yr_list[ydx])+'.txt'
+        mpicklepath = fn_o/pn_m
+        spicklepath = fn_o/pn_s
+        vpicklepath = fn_o/pn_v
+    
         varidx = {}            # flag index where time is in month ii 
         mvar = {}              # pull those flagged vars
-        varmean = {}           # holds averages of monthly vars per grid cell 
+        vmean = {}           # holds averages of monthly vars per grid cell
+        vstd = {}            #       stdev 
+        vvar = {}              #       variances 
+    
+    if args.stat_type == 'basic':
+                
         for ii in range(1,13):
-            varidx[ii] = np.where(mmonth==ii)   
-            mvar[ii] = var[varidx[ii]]          
-            # extra steps to take avg so don't get error code when sum across an all nan layer 
-            masked_data = np.ma.masked_array(mvar[ii], np.isnan(mvar[ii]))     
-            vm = np.ma.average(masked_data, axis=0,keepdims=False)  
+            vbool = (mmonth == ii)*1            # *1 so 1/0 not T/F
+            V = var[vbool==1,:,:]
+            # fof all-NaN slices, a RuntimeWarning is raised. To avoid, mask data 1st:
+            masked_data = np.ma.masked_array(V, np.isnan(V)) 
+            vm = np.nanmean(masked_data,axis=0,keepdims=False)
+            vs = np.nanstd(masked_data,axis=0,keepdims=False)
+            vv = np.nanvar(masked_data,axis=0,keepdims=False)
+            
             vm[mask_rho==0] = np.nan
-            varmean[ii] = vm
-            del masked_data
+            vs[mask_rho==0] = np.nan
+            vv[mask_rho==0] = np.nan
+            
+            vmean[ii] = vm
+            vstd[ii] = vs
+            vvar[ii] = vv
+            
+            del masked_data 
     
-        varmean['Lat'] = lat
-        varmean['Lon'] = lon
-        varmean['myear'] = myear[0]
-    
+        vmean['Lat'] = lat
+        vmean['Lon'] = lon
+        vmean['myear'] = myear[0]
+        
+        vstd['Lat'] = lat
+        vstd['Lon'] = lon
+        vstd['myear'] = myear[0]
+        
+        vvar['Lat'] = lat
+        vvar['Lon'] = lon
+        vvar['myear'] = myear[0]
+        
+        # average
         try: 
-            var_file = open(picklepath, 'wt') 
-            var_file.write(str(varmean)) 
-            var_file.close() 
-            print('saving file: ' + pn_o)
+            mvar_file = open(mpicklepath, 'wt') 
+            mvar_file.write(str(vmean)) 
+            mvar_file.close() 
+            print('saving file: ' + pn_m)
   
         except: 
-            print('Unable to write to file named: ' + fnt)
+            print('Unable to write to file named: ' + pn_m)
+        
+        # stdev     
+        try: 
+            svar_file = open(spicklepath, 'wt') 
+            svar_file.write(str(vstd)) 
+            svar_file.close() 
+            print('saving file: ' + pn_s)
+  
+        except: 
+            print('Unable to write to file named: ' + pn_s)
+        
+        # variation
+        try: 
+            vvar_file = open(vpicklepath, 'wt') 
+            vvar_file.write(str(vvar)) 
+            vvar_file.close() 
+            print('saving file: ' + pn_v)
+  
+        except: 
+            print('Unable to write to file named: ' + pn_v)
         
     
 print('Total processing time = %0.2f sec' % (time()-tt0))
