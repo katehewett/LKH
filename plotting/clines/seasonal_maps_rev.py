@@ -1,32 +1,63 @@
 '''
-plotting seasonal maps of 
-sml 
-N2max + depth 
+After running group_monthly_output <or equivalent> can 
+run this code to produce maps of the data across each 
+month and over years 2014 - 20(21)
 
-
+21 July 2024: 
+plotting 2014 - 2017 = Fig 1 
+         2018 - 2021 = Fig 2 
+And as get more years will change orientation
 
 '''
 
 # imports
 from lo_tools import Lfun, zfun
 from lo_tools import plotting_functions as pfun
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
-import sys 
+import os 
 import xarray as xr
 import netCDF4 as nc
 from time import time
 import numpy as np
-import math
+import argparse
+import pandas as pd
+import pickle 
 
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-import cmcrameri.cm as cmc
-#import cmocean
+from cmcrameri import cm as cm2
 import matplotlib.dates as mdates
 from datetime import datetime
-import pandas as pd
 
+# command line arugments
+parser = argparse.ArgumentParser()
+# which run was used:
+parser.add_argument('-gtx', '--gtagex', type=str)   # e.g. cas7_t0_x4b
+# select years 
+parser.add_argument('-y0', '--ys0', type=str) # e.g. 2014
+parser.add_argument('-y1', '--ys1', type=str) # e.g. 2015
+parser.add_argument('-stat', '--stat_type', type=str) # stat type: mean
+parser.add_argument('-mvar', '--variable', type=str) # select variable  
+# select job name used
+parser.add_argument('-job', type=str) # job name: shelf_box
+# Optional: set max number of subprocesses to run at any time
+parser.add_argument('-Nproc', type=int, default=10)
+# Optional: for testing
+parser.add_argument('-test', '--testing', default=False, type=Lfun.boolean_string)
+# get the args and put into Ldir
+args = parser.parse_args()
+# test that main required arguments were provided
+argsd = args.__dict__
+for a in ['gtagex']:
+    if argsd[a] == None:
+        print('*** Missing required argument: ' + a)
+        sys.exit()
+gridname, tag, ex_name = args.gtagex.split('_')
+# get the dict Ldir
+Ldir = Lfun.Lstart(gridname=gridname, tag=tag, ex_name=ex_name)
+# add more entries to Ldir
+for a in argsd.keys():
+    if a not in Ldir.keys():
+        Ldir[a] = argsd[a]
 
 tt0 = time()
 
@@ -43,97 +74,35 @@ fig_dict = {
     '2021':[2,3,7]
 }
 
-mo_list = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec']
-
-plt.close('all')
-fs=11
-plt.rc('font', size=fs)
-fig1 = plt.figure(figsize=(18,10))
-fig1.set_size_inches(18,10, forward=False)
-    
-fig2 = plt.figure(figsize=(18,10))
-fig2.set_size_inches(18,10, forward=False)
-    
+mo_list = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec']  
 yr_list = list(fig_dict.keys())
 numyrs = len(yr_list)
 
-fn_o = Ldir['parent'] / 'plotting' / 'clines' 
+fn_i = Ldir['parent'] / 'LKH_output' / 'explore_extract_clines' / args.gtagex / args.job / 'monthly' / args.variable / 'test'
 
+    
+plt.close('all')
+fs=11
+        
 for ydx in range(0,numyrs): 
-    # loop thru and load files 
-    fna = 'shelf_box_'+yr_list[ydx]+'.01.01_'+yr_list[ydx]+'.12.31'
-    fn_i = Ldir['LOo'] / 'extract' / 'cas7_t0_x4b' / 'clines' / fna
-    fnb = 'shelf_box_pycnocline_'+yr_list[ydx]+'.01.01_'+yr_list[ydx]+'.12.31'+'.nc'
-    fn_in = fn_i / fnb
-
-    ds = xr.open_dataset(fn_in, decode_times=True)     
-
-    ot = pd.to_datetime(ds.ocean_time.values)
-
-    xrho = ds['lon_rho'].values
-    yrho = ds['lat_rho'].values
-    mask_rho = ds['mask_rho'].values
-    h = ds['h'].values
-
-    #var = ds['zSML'].values
-    var1 = ds['zDGmax']
-    var = np.abs(var1.values)
-    NT,NR,NC = np.shape(var)
     
-    del ds
+    # load pickled data 
+    if args.stat_type == 'mean':
+        pn_m = args.variable+'_monthly_average_'+str(yr_list[ydx])+'.txt' 
+    elif args.stat_type == 'stdev':
+        pn = args.variable+'_monthly_std_'+str(yr_list[ydx])+'.p' 
+    elif args.stat_type == 'var':
+        pn = args.variable+'_monthly_var_'+str(yr_list[ydx])+'.txt' 
     
-    mmonth = ot.month
-    myear = ot.year
+    picklepath = fn_i/pn  
     
-    # if monthly & stats = avg, initialize and take avgs
-    varidx = {}            # flag index where time is in month ii 
-    mvar = {}              # pull those flagged vars
-    varmean = {}           # holds averages of monthly vars per grid cell 
-    for ii in range(1,13):
-        varidx[ii] = np.where(mmonth==ii)   
-        mvar[ii] = var[varidx[ii]]          
-        # extra steps to take avg so don't get error code when sum across an all nan layer 
-        masked_data = np.ma.masked_array(mvar[ii], np.isnan(mvar[ii]))     
-        vm = np.ma.average(masked_data, axis=0,keepdims=False)  
-        vm[mask_rho==0] = np.nan
-        varmean[ii] = vm
-        del masked_data
-        
-    if fig_dict[yr_list[ydx]][0]==1:
-        fig1
-    elif fig_dict[yr_list[ydx]][0]==2:
-        fig2
+    if os.path.isfile(picklepath)==False:
+        print('no file named: ' + picklepath)
+        sys.exit()
     
-    # plot each months map, 13th column is saved for colorbar and text 
-    for ii in range(1,13): 
-        axnum = ii-1 
+    # Load the dictionary from the file
+    with open(picklepath, 'rb') as fp:
+        data1 = pickle.load(fp)
+        print('loaded'+str(yr_list[ydx]))
 
-        ax = plt.subplot2grid((4,13), (fig_dict[yr_list[ydx]][1],axnum), colspan=1,rowspan=1)
-        pfun.add_coast(ax)
-        pfun.dar(ax)
-        ax.axis([-127.5, -123.5, 43, 50])
-        ax.contour(xrho,yrho,h, [200],colors=['black'], linewidths=1, linestyles='solid',alpha=0.4)
-        ax.set_xticks([-127.5, -125, -123.5])
-        ax.set_title(mo_list[axnum]+' '+yr_list[ydx])
-        #axw.grid(True)
-        
-        if ii<12 and ii!=1: 
-            ax.yaxis.set_ticklabels([])
-        if ii == 12:
-            ax.yaxis.tick_right()
-        if int(yr_list[ydx]) != 2017 | int(yr_list[ydx]) != 2021:
-            ax.xaxis.set_ticklabels([])
-
-        smin = 10 #math.floor(np.min(var))
-        smax = 150 #math.ceil(np.max(var))
-        slevels = np.arange(smin,smax,0.5)
-        smap=cmc.roma_r.with_extremes(under='Navy',over='Maroon')
-        
-        cpm = ax.contourf(xrho, yrho, varmean[ii],slevels,cmap=smap,extend = "both") 
-        
-        
-        plt.gcf().tight_layout()
-
-
-
-
+    

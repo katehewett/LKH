@@ -79,7 +79,7 @@ numyrs = len(yr_list)
 
 # name the output file where  seasonal dicts will be dumped
 fn_o = Ldir['parent'] / 'LKH_output' / 'explore_extract_clines' / args.gtagex / args.job / 'monthly' / args.variable
-Lfun.make_dir(fn_o, clean=False)
+Lfun.make_dir(fn_o, clean=True)
 
 for ydx in range(0,numyrs): 
     # inputs 
@@ -98,7 +98,6 @@ for ydx in range(0,numyrs):
     mask_rho = ds['mask_rho'].values
     h = ds['h'].values
 
-    # TODO Remove abs values and rerun - was confusing when looking at data earlier. 
     if args.variable == 'zDGmax':
         var1 = ds['zDGmax']
         var = np.abs(var1.values)
@@ -130,8 +129,8 @@ for ydx in range(0,numyrs):
     
         varidx = {}            # flag index where time is in month ii 
         mvar = {}              # pull those flagged vars
-        vmean = {}             # holds averages of monthly vars per grid cell
-        vstd = {}              #       stdev 
+        vmean = {}           # holds averages of monthly vars per grid cell
+        vstd = {}            #       stdev 
         vvar = {}              #       variances 
                 
         for ii in range(1,13):

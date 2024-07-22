@@ -150,21 +150,21 @@ for ydx in range(0,numyrs):
         ax = plt.subplot2grid((4,13), (fig_dict[str(yr_list[ydx])][1],axnum), colspan=1,rowspan=1)
         pfun.add_coast(ax)
         pfun.dar(ax)
-        ax.axis([-127.5, -123.5, 43, 50])
+        ax.axis([-125, -123.5, 46, 49])
         ax.contour(data1['Lon'],data1['Lat'],h.values, [200],colors=['black'], linewidths=1, linestyles='solid',alpha=0.4)
-        ax.set_xticks([-127.5,-127,-126.5,-126,-125.5,-125,-124.5,-124,-123.5])
+        ax.set_xticks([-125.5,-125,-124.5,-124,-123.5])
         ax.set_title(mo_list[axnum]+' '+str(data1['myear']))
         #axw.grid(True)
         
         if ii<12 and ii!=1: 
             ax.yaxis.set_ticklabels([])
-        #if ii == 12:
-            #ax.yaxis.tick_right()
+        if ii == 12:
+            ax.yaxis.tick_right()
         
         ax.xaxis.set_ticklabels([])
             
         if int(yr_list[ydx]) == 2017 or int(yr_list[ydx]) == 2021:
-            ax.xaxis.set_ticklabels([-127.5,'','','','','','','',-123.5])
+            ax.xaxis.set_ticklabels([-125.5,'','','',-123.5])
         
         if args.variable == 'zDGmax':  
             if args.stat_type == 'vavg':
@@ -181,38 +181,7 @@ for ydx in range(0,numyrs):
                 else: smin = int(args.min_val)
         
             slevels = np.arange(smin,smax+0.5,0.5)
-            
-        elif args.variable == 'DGmax':  
-            if args.stat_type == 'vavg':
-                smap=cmc.roma.with_extremes(under='Maroon',over='Navy')
-                if args.max_val == None: smax = 1 #math.ceil(np.max(var))
-                else: smax = float(args.max_val)
-                if args.min_val == None: smin = 0  #math.floor(np.min(var))
-                else: smin = float(args.min_val)
-            #elif args.stat_type == 'vstdev':
-             #   smap=cmc.roma_r.with_extremes(under='Navy',over='Maroon')
-             #   if args.max_val == None: smax = 60 #math.ceil(np.max(var))
-             #   else: smax = int(args.max_val)
-             #   if args.min_val == None: smin = 0  #math.floor(np.min(var))
-             #   else: smin = int(args.min_val)
-        
-            slevels = np.arange(smin,smax+0.01,0.01)
-            
-        if args.variable == 'zSML':  
-            if args.stat_type == 'vavg':
-                smap=cmc.roma.with_extremes(under='Maroon',over='Navy')
-                if args.max_val == None: smax = 150 #math.ceil(np.max(var))
-                else: smax = int(args.max_val)
-                if args.min_val == None: smin = 0  #math.floor(np.min(var))
-                else: smin = int(args.min_val)
-            elif args.stat_type == 'vstdev':
-                smap=cmc.roma_r.with_extremes(under='Navy',over='Maroon')
-                if args.max_val == None: smax = 60 #math.ceil(np.max(var))
-                else: smax = int(args.max_val)
-                if args.min_val == None: smin = 0  #math.floor(np.min(var))
-                else: smin = int(args.min_val)
-        
-            slevels = np.arange(smin,smax+0.5,0.5)            
+
         cpm = ax.contourf(data1['Lon'], data1['Lat'], data1[ii].data,slevels,cmap=smap,extend = "both")      
         fig1.tight_layout()
         
@@ -222,27 +191,15 @@ if args.variable == 'zDGmax' and args.stat_type == 'vavg':
     ff = np.floor((smax+1-smin)/10)
     ll = [go for go in range(smin,smax+1,10)]
     tcb = plt.gcf().colorbar(cpm2, ticks = ll, location='right',pad = 0.05, fraction = frac, label='avg zDGmax [m]')
-    tcb.ax.yaxis.set_ticks_position('left')
+    #tcb.ax.yaxis.set_ticks_position('left')
     #tcb.ax.yaxis.set_label_position('left')
     tcb.ax.invert_yaxis()
 elif args.variable == 'zDGmax' and args.stat_type == 'vstdev':
     ff = np.floor((smax+1-smin)/10)
     ll = [go for go in range(smin,smax+1,10)]
     tcb = plt.gcf().colorbar(cpm2, ticks = ll, location='right',pad = 0.05, fraction = frac, label='stdev zDGmax')
-elif args.variable == 'zSML' and args.stat_type == 'vavg':
-    ff = np.floor((smax+1-smin)/10)
-    ll = [go for go in range(smin,smax+1,10)]
-    tcb = plt.gcf().colorbar(cpm2, ticks = ll, location='right',pad = 0.05, fraction = frac, label='avg zSML')
-    tcb.ax.yaxis.set_ticks_position('left')
-elif args.variable == 'DGmax' and args.stat_type == 'vavg':
-    #ll = np.arange(0,1.1,0.1)
-    ll = np.arange(smin,smax+0.1,0.1)
-    tcb = plt.gcf().colorbar(cpm2, ticks = ll, location='right',pad = 0.05, fraction = frac, label='avg DGmax [kg/m3/m]')
-    tcb.ax.yaxis.set_ticks_position('left')
-    #tcb.ax.yaxis.set_label_position('left')
-    #tcb.ax.invert_yaxis()   
-     
+    
 axc.remove()
 
-figname = 'NEW_monthly_' + args.stat_type + '_' + args.variable + '_' + args.ys0 + '_' + args.ys1 + '.png'
+figname = 'NEW_WA_monthly_' + args.stat_type + '_' + args.variable + '_' + args.ys0 + '_' + args.ys1 + '.png'
 fig1.savefig(fn_o / figname)

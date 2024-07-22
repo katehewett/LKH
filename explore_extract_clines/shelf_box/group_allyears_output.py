@@ -13,6 +13,7 @@ It will save a smaller pickled file for that variable
 !! code assumes extracted full years were saved XXXX.01.01 - XXXX.12.31 !! 
 
 personal computer // python 
+run group_allyears_output -gtx cas7_t0_x4b -y0 2014 -y1 2015 -mvar zDGmax -stat basic -job shelf_box -test True
 run group_monthly_output -gtx cas7_t0_x4b -y0 2014 -y1 2021 -mvar zDGmax -stat basic -job shelf_box -test True
 run group_monthly_output -gtx cas7_t0_x4b -y0 2014 -y1 2021 -mvar zSML -stat basic -job shelf_box -test True
 
@@ -78,9 +79,11 @@ yr_list = [year for year in range(int(args.ys0), int(args.ys1)+1)]
 numyrs = len(yr_list)
 
 # name the output file where  seasonal dicts will be dumped
-fn_o = Ldir['parent'] / 'LKH_output' / 'explore_extract_clines' / args.gtagex / args.job / 'monthly' / args.variable
+fn_o = Ldir['parent'] / 'LKH_output' / 'explore_extract_clines' / args.gtagex / args.job / 'allyears' / args.variable
 Lfun.make_dir(fn_o, clean=False)
 
+V = np.ones([numyrs,365,1111,356])*np.nan #initialize
+ 
 for ydx in range(0,numyrs): 
     # inputs 
     fna = args.job+'_'+str(yr_list[ydx])+'.01.01_'+str(yr_list[ydx])+'.12.31' 
@@ -114,71 +117,5 @@ for ydx in range(0,numyrs):
         
     NT,NR,NC = np.shape(var)
     
-    del ds
+    V[ydx,:,:,:] = var1
     
-    mmonth = ot.month
-    myear = ot.year
-    
-    if args.stat_type == 'basic':
-        # set output path picklepath and pickled filename pn_o
-        pn_m = args.variable+'_monthly_average_'+str(yr_list[ydx])+'.pkl'
-        pn_s = args.variable+'_monthly_std_'+str(yr_list[ydx])+'.pkl'
-        pn_v = args.variable+'_monthly_var_'+str(yr_list[ydx])+'.pkl'
-        mpicklepath = fn_o/pn_m
-        spicklepath = fn_o/pn_s
-        vpicklepath = fn_o/pn_v
-    
-        varidx = {}            # flag index where time is in month ii 
-        mvar = {}              # pull those flagged vars
-        vmean = {}             # holds averages of monthly vars per grid cell
-        vstd = {}              #       stdev 
-        vvar = {}              #       variances 
-                
-        for ii in range(1,13):
-            vbool = (mmonth == ii)*1            # *1 so 1/0 not T/F
-            V = var[vbool==1,:,:]
-            # fof all-NaN slices, a RuntimeWarning is raised. To avoid, mask data 1st:
-            masked_data = np.ma.masked_array(V, np.isnan(V)) 
-            vm = np.nanmean(masked_data,axis=0,keepdims=False)
-            vs = np.nanstd(masked_data,axis=0,keepdims=False)
-            vv = np.nanvar(masked_data,axis=0,keepdims=False)
-            
-            vm[mask_rho==0] = np.nan
-            vs[mask_rho==0] = np.nan
-            vv[mask_rho==0] = np.nan
-            
-            vmean[ii] = vm
-            vstd[ii] = vs
-            vvar[ii] = vv
-            
-            del masked_data 
-    
-        vmean['Lat'] = lat
-        vmean['Lon'] = lon
-        vmean['myear'] = myear[0]
-        
-        vstd['Lat'] = lat
-        vstd['Lon'] = lon
-        vstd['myear'] = myear[0]
-        
-        vvar['Lat'] = lat
-        vvar['Lon'] = lon
-        vvar['myear'] = myear[0]
-        
-        # average
-        with open(mpicklepath, 'wb') as fm:
-            pickle.dump(vmean, fm)
-            print('vmean dict saved successfully to file')
-        
-        # stdev     
-        with open(spicklepath, 'wb') as fs:
-            pickle.dump(vstd, fs)
-            print('vstd dict saved successfully to file')
-        
-        # var
-        with open(vpicklepath, 'wb') as fv:
-            pickle.dump(vvar, fv)
-            print('vvar dict saved successfully to file')
-        
-    
-print('Total processing time = %0.2f sec' % (time()-tt0))
