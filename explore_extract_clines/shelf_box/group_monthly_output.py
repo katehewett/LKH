@@ -12,10 +12,14 @@ It will save a smaller pickled file for that variable
 
 !! code assumes extracted full years were saved XXXX.01.01 - XXXX.12.31 !! 
 
+personal computer // python 
 run group_monthly_output -gtx cas7_t0_x4b -y0 2014 -y1 2021 -mvar zDGmax -stat basic -job shelf_box -test True
 run group_monthly_output -gtx cas7_t0_x4b -y0 2014 -y1 2021 -mvar zSML -stat basic -job shelf_box -test True
 
 takes ~5mins to do 7 years
+
+apogee: 
+python group_monthly_output.py -gtx cas7_t0_x4b -y0 2014 -y1 2021 -mvar DGmax -stat basic -job shelf_box > DGmax.log &
 '''
 
 # imports
@@ -38,7 +42,7 @@ tt0 = time()
 parser = argparse.ArgumentParser()
 # which run was used:
 parser.add_argument('-gtx', '--gtagex', type=str)   # e.g. cas7_t0_x4b
-parser.add_argument('-ro', '--roms_out_num', type=int) # 2 = Ldir['roms_out2'], etc.
+#parser.add_argument('-ro', '--roms_out_num', type=int) # 2 = Ldir['roms_out2'], etc.
 # select years 
 parser.add_argument('-y0', '--ys0', type=str) # e.g. 2014
 parser.add_argument('-y1', '--ys1', type=str) # e.g. 2015
@@ -115,9 +119,9 @@ for ydx in range(0,numyrs):
     
     if args.stat_type == 'basic':
         # set output path picklepath and pickled filename pn_o
-        pn_m = args.variable+'_monthly_average_'+str(yr_list[ydx])+'.txt'
-        pn_s = args.variable+'_monthly_std_'+str(yr_list[ydx])+'.txt'
-        pn_v = args.variable+'_monthly_var_'+str(yr_list[ydx])+'.txt'
+        pn_m = args.variable+'_monthly_average_'+str(yr_list[ydx])+'.pkl'
+        pn_s = args.variable+'_monthly_std_'+str(yr_list[ydx])+'.pkl'
+        pn_v = args.variable+'_monthly_var_'+str(yr_list[ydx])+'.pkl'
         mpicklepath = fn_o/pn_m
         spicklepath = fn_o/pn_s
         vpicklepath = fn_o/pn_v
@@ -162,34 +166,19 @@ for ydx in range(0,numyrs):
         vvar['myear'] = myear[0]
         
         # average
-        try: 
-            mvar_file = open(mpicklepath, 'wt') 
-            mvar_file.write(str(vmean)) 
-            mvar_file.close() 
-            print('saving file: ' + pn_m)
-  
-        except: 
-            print('Unable to write to file named: ' + pn_m)
+        with open(mpicklepath, 'wb') as fp:
+            pickle.dump(vmean, fp)
+            print('vmean dict saved successfully to file')
         
         # stdev     
-        try: 
-            svar_file = open(spicklepath, 'wt') 
-            svar_file.write(str(vstd)) 
-            svar_file.close() 
-            print('saving file: ' + pn_s)
-  
-        except: 
-            print('Unable to write to file named: ' + pn_s)
+        with open(spicklepath, 'wb') as fp:
+            pickle.dump(vstd, fp)
+            print('vstd dict saved successfully to file')
         
         # variation
-        try: 
-            vvar_file = open(vpicklepath, 'wt') 
-            vvar_file.write(str(vvar)) 
-            vvar_file.close() 
-            print('saving file: ' + pn_v)
-  
-        except: 
-            print('Unable to write to file named: ' + pn_v)
+        with open(vpicklepath, 'wb') as fp:
+            pickle.dump(vvar, fp)
+            print('vvar dict saved successfully to file')
         
     
 print('Total processing time = %0.2f sec' % (time()-tt0))
