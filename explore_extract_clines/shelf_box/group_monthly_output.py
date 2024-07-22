@@ -12,9 +12,10 @@ It will save a smaller pickled file for that variable
 
 !! code assumes extracted full years were saved XXXX.01.01 - XXXX.12.31 !! 
 
-run group_monthly_output -gtx cas7_t0_x4b -y0 2014 -y1 2015 -mvar zDGmax -stat basic -job shelf_box -test True
+run group_monthly_output -gtx cas7_t0_x4b -y0 2014 -y1 2021 -mvar zDGmax -stat basic -job shelf_box -test True
+run group_monthly_output -gtx cas7_t0_x4b -y0 2014 -y1 2021 -mvar zSML -stat basic -job shelf_box -test True
 
-takes ~ 1minute to do 2 years 
+takes ~5mins to do 7 years
 '''
 
 # imports
@@ -94,6 +95,15 @@ for ydx in range(0,numyrs):
 
     if args.variable == 'zDGmax':
         var1 = ds['zDGmax']
+        var = np.abs(var1.values)
+    elif args.variable == 'DGmax':
+        var1 = ds['DGmax']
+        var = np.abs(var1.values)
+#    elif args.variable == 'SA_DGmax':
+#        var1 = ds.SA[:,2,:,:]       # grab DGmax zone = 2
+#        var = np.abs(var1.values)
+    elif args.variable == 'zSML':
+        var1 = ds['zSML']
         var = np.abs(var1.values)
         
     NT,NR,NC = np.shape(var)
