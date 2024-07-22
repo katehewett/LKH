@@ -131,8 +131,6 @@ for ydx in range(0,numyrs):
         vmean = {}           # holds averages of monthly vars per grid cell
         vstd = {}            #       stdev 
         vvar = {}              #       variances 
-    
-    if args.stat_type == 'basic':
                 
         for ii in range(1,13):
             vbool = (mmonth == ii)*1            # *1 so 1/0 not T/F
@@ -166,18 +164,18 @@ for ydx in range(0,numyrs):
         vvar['myear'] = myear[0]
         
         # average
-        with open(mpicklepath, 'wb') as fp:
-            pickle.dump(vmean, fp)
+        with open(mpicklepath, 'wb') as fm:
+            pickle.dump(vmean, fm)
             print('vmean dict saved successfully to file')
         
         # stdev     
-        with open(spicklepath, 'wb') as fp:
-            pickle.dump(vstd, fp)
+        with open(spicklepath, 'wb') as fs:
+            pickle.dump(vstd, fs)
             print('vstd dict saved successfully to file')
         
         # variation
-        with open(vpicklepath, 'wb') as fp:
-            pickle.dump(vvar, fp)
+        with open(vpicklepath, 'wb') as fv:
+            pickle.dump(vvar, fv)
             print('vvar dict saved successfully to file')
         
     
