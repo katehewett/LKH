@@ -1,25 +1,5 @@
 '''
-Option to run this code first before plotting <monthly/seasonal> maps
-of data produced by extract/box or clines.
-This code will make seasonal groupings <e.g. montly avgs> 
-of data produced from extract_clines.py 
-
-Right now this code will group data by month, 
-and perform stat_type that we input: 
-basic = mean "average" std and var
-
-It will save a smaller pickled file for that variable
-
-!! code assumes extracted full years were saved XXXX.01.01 - XXXX.12.31 !! 
-
-personal computer // python 
-run group_monthly_output -gtx cas7_t0_x4b -y0 2014 -y1 2021 -mvar zDGmax -stat basic -job shelf_box -test True
-run group_monthly_output -gtx cas7_t0_x4b -y0 2014 -y1 2021 -mvar zSML -stat basic -job shelf_box -test True
-
-takes ~1min to do 7 years
-
-apogee: 
-python group_monthly_output.py -gtx cas7_t0_x4b -y0 2014 -y1 2021 -mvar DGmax -stat basic -job shelf_box > DGmax.log &
+grabs h and mask_rho for pickle files 
 '''
 
 # imports
@@ -43,18 +23,11 @@ tt0 = time()
 parser = argparse.ArgumentParser()
 # which run was used:
 parser.add_argument('-gtx', '--gtagex', type=str)   # e.g. cas7_t0_x4b
-#parser.add_argument('-ro', '--roms_out_num', type=int) # 2 = Ldir['roms_out2'], etc.
 # select years 
 parser.add_argument('-y0', '--ys0', type=str) # e.g. 2014
-parser.add_argument('-y1', '--ys1', type=str) # e.g. 2015
-parser.add_argument('-stat', '--stat_type', type=str) # stat type: average
-parser.add_argument('-mvar', '--variable', type=str) # select variable  
+parser.add_argument('-y1', '--ys1', type=str) # e.g. 2014
 # select job name used
 parser.add_argument('-job', type=str) # job name: shelf_box
-# Optional: set max number of subprocesses to run at any time
-parser.add_argument('-Nproc', type=int, default=10)
-# Optional: for testing
-parser.add_argument('-test', '--testing', default=False, type=Lfun.boolean_string)
 # get the args and put into Ldir
 args = parser.parse_args()
 # test that main required arguments were provided
@@ -73,13 +46,19 @@ for a in argsd.keys():
         
 Ldir = Lfun.Lstart()
 
-# organize and set paths before taking <average>
-yr_list = [year for year in range(int(args.ys0), int(args.ys1)+1)]
-numyrs = len(yr_list)
-
 # name the output file where  seasonal dicts will be dumped
-fn_o = Ldir['parent'] / 'LKH_output' / 'explore_extract_clines' / args.gtagex / args.job / 'monthly' / args.variable
+fn_o = Ldir['parent'] / 'LKH_output' / 'explore_extract_clines' / args.gtagex / args.job / 'monthly' 
 Lfun.make_dir(fn_o, clean=True)
+
+fna = args.job+'_'+str(yr_list[ydx])+'.01.01_'+str(yr_list[ydx])+'.12.31' 
+fn_i = Ldir['LOo'] / 'extract' / args.gtagex / 'clines' / fna
+fnb = 'shelf_box_pycnocline_'+str(yr_list[ydx])+'.01.01_'+str(yr_list[ydx])+'.12.31'+'.nc'
+fn_in = fn_i / fnb
+
+ds2 = dataset('')
+ds = xr.open_dataset(fn_in, decode_times=True)   
+h = ds.h
+mask_rho = ds.mask_rho
 
 for ydx in range(0,numyrs): 
     # inputs 

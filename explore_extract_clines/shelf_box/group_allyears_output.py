@@ -93,7 +93,8 @@ for ydx in range(0,numyrs):
     if os.path.isfile(fn_in)==False:
         print('no file named: '+fnb)
         sys.exit()
-        
+    print('working on '+str(yr_list[ydx]))
+    
     ds = xr.open_dataset(fn_in, decode_times=True)     
     ot = pd.to_datetime(ds.ocean_time.values)
     lon = ds['lon_rho'].values
@@ -117,5 +118,43 @@ for ydx in range(0,numyrs):
         
     NT,NR,NC = np.shape(var)
     
-    V[ydx,:,:,:] = var1
+    V[ydx,:,:,:] = var
+    
+    mmonth = ot.month
+    myear = ot.year
+    
+    if args.stat_type == 'basic':
+        # set output path picklepath and pickled filename pn_o
+        pn_m = args.variable+'_monthly_average_'+str(yr_list[ydx])+'.pkl'
+        pn_s = args.variable+'_monthly_std_'+str(yr_list[ydx])+'.pkl'
+        pn_v = args.variable+'_monthly_var_'+str(yr_list[ydx])+'.pkl'
+        mpicklepath = fn_o/pn_m
+        spicklepath = fn_o/pn_s
+        vpicklepath = fn_o/pn_v
+    
+        varidx = {}            # flag index where time is in month ii 
+        mvar = {}              # pull those flagged vars
+        vmean = {}             # holds averages of monthly vars per grid cell
+        vstd = {}              #       stdev 
+        vvar = {}              #       variances 
+                
+        for ii in range(1,13):
+            vbool = (mmonth == ii)*1            # *1 so 1/0 not T/F
+            V = var[vbool==1,:,:]
+            # fof all-NaN slices, a RuntimeWarning is raised. To avoid, mask data 1st:
+            masked_data = np.ma.masked_array(V, np.isnan(V)) 
+            vm = np.nanmean(masked_data,axis=0,keepdims=False)
+            vs = np.nanstd(masked_data,axis=0,keepdims=False)
+            vv = np.nanvar(masked_data,axis=0,keepdims=False)
+            
+            vm[mask_rho==0] = np.nan
+            vs[mask_rho==0] = np.nan
+            vv[mask_rho==0] = np.nan
+            
+            vmean[ii] = vm
+            vstd[ii] = vs
+            vvar[ii] = vv
+            
+            del masked_data 
+    
     
