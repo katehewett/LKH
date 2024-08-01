@@ -1,15 +1,15 @@
 '''
-After running group_monthly_output <or equivalent> can 
-run this code to produce maps of the data across each 
-month and over years 2014 - 20(21)
+After running extract_hypoxic_volume   
+run this code to produce maps of the hypoxic dz's 
+across each month and over years 2014 - 20(21)
 
 21 July 2024: 
 plotting 2014 - 2017 = Fig 1 
          2018 - 2021 = Fig 2 
 And as get more years will change orientation
 
-run plot_monthly_maps -gtx cas7_t0_x4b -y0 2014 -y1 2017 -mvar zDGmax -stat vavg -job shelf_box -vmin 0 -vmax 150
-run plot_monthly_maps -gtx cas7_t0_x4b -y0 2014 -y1 2017 -mvar zDGmax -stat vavg -job shelf_box -vmin 0 -vmax 50
+run plot_monthly_hypoxia -gtx cas7_t0_x4b -y0 2014 -y1 2014 -mvar hyp_dz -stat vavg  
+run plot_monthly_hypoxia -gtx cas7_t0_x4b -y0 2014 -y1 2017 -mvar zDGmax -stat vavg -job shelf_box -vmin 0 -vmax 50
 
 run plot_monthly_maps -gtx cas7_t0_x4b -y0 2014 -y1 2017 -mvar DGmax -stat vavg -job shelf_box 
 
@@ -43,6 +43,7 @@ parser.add_argument('-gtx', '--gtagex', type=str)   # e.g. cas7_t0_x4b
 parser.add_argument('-y0', '--ys0', type=str) # e.g. 2014
 parser.add_argument('-y1', '--ys1', type=str) # e.g. 2015
 parser.add_argument('-stat', '--stat_type', type=str) # stat type: vavg, vstdev, vvar
+parser.add_argument('-lt', '--list_type', type=str) # list type: daily monthly lowpass
 parser.add_argument('-mvar', '--variable', type=str) # select variable  
 # select job name used
 parser.add_argument('-job', type=str) # job name: shelf_box
@@ -90,17 +91,17 @@ numyrs = len(yr_list)
 mo_list = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec']  
 
 ## want h and mask_rho (didn't save with pickle files)
-fna = args.job+'_'+str(yr_list[0])+'.01.01_'+str(yr_list[0])+'.12.31' 
-fn_i = Ldir['LOo'] / 'extract' / args.gtagex / 'clines' / fna
-fnb = 'shelf_box_pycnocline_'+str(yr_list[0])+'.01.01_'+str(yr_list[0])+'.12.31'+'.nc'
+fna = 'LO_'+str(yr_list[0])+'.01.01_'+str(yr_list[0])+'.12.31' 
+fn_i = Ldir['LOo'] / 'extract' / args.gtagex / 'hypoxic_volume' / fna
+fnb = 'LO_hypoxic_volume_'+str(args.list_type)+'_'+str(yr_list[0])+'.01.01_'+str(yr_list[0])+'.12.31'+'.nc'
 fn_in = fn_i / fnb
 ds = xr.open_dataset(fn_in, decode_times=True)
 h = ds['h']
 mask_rho = ds['mask_rho']
 del ds, fn_i, fnb, fn_in
 
-fn_i = Ldir['parent'] / 'LKH_output' / 'explore_extract_clines' / args.gtagex / args.job / 'monthly' / args.variable 
-fn_o = Ldir['parent'] / 'LKH_output' / 'explore_extract_clines' / args.gtagex / args.job / 'monthly' / args.variable / 'plotting'
+fn_i = Ldir['parent'] / 'LKH_output' / 'hypoxic_volume' / args.gtagex / 'monthly' / args.variable
+fn_o = fn_i / 'plotting'
 Lfun.make_dir(fn_o, clean=False)
 
 plt.close('all')
@@ -166,81 +167,36 @@ for ydx in range(0,numyrs):
         if int(yr_list[ydx]) == 2017 or int(yr_list[ydx]) == 2021:
             ax.xaxis.set_ticklabels([-127.5,'','','','','','','',-123.5])
         
-        if args.variable == 'zDGmax':  
-            if args.stat_type == 'vavg':
-                smap=cmc.roma.with_extremes(under='Maroon',over='Navy')
-                if args.max_val == None: smax = 150 #math.ceil(np.max(var))
-                else: smax = int(args.max_val)
-                if args.min_val == None: smin = 0  #math.floor(np.min(var))
-                else: smin = int(args.min_val)
-            elif args.stat_type == 'vstdev':
-                smap=cmc.roma_r.with_extremes(under='Navy',over='Maroon')
-                if args.max_val == None: smax = 60 #math.ceil(np.max(var))
-                else: smax = int(args.max_val)
-                if args.min_val == None: smin = 0  #math.floor(np.min(var))
-                else: smin = int(args.min_val)
+        if args.stat_type == 'vavg':
+            smap=cmc.roma.with_extremes(under='Maroon',over='Navy')
+            if args.max_val == None: smax = 200 #math.ceil(np.max(var))
+            else: smax = int(args.max_val)
+            if args.min_val == None: smin = 0  #math.floor(np.min(var))
+            else: smin = int(args.min_val)
         
-            slevels = np.arange(smin,smax+0.5,0.5)
-            
-        elif args.variable == 'DGmax':  
-            if args.stat_type == 'vavg':
-                smap=cmc.roma.with_extremes(under='Maroon',over='Navy')
-                if args.max_val == None: smax = 1 #math.ceil(np.max(var))
-                else: smax = float(args.max_val)
-                if args.min_val == None: smin = 0  #math.floor(np.min(var))
-                else: smin = float(args.min_val)
-            #elif args.stat_type == 'vstdev':
-             #   smap=cmc.roma_r.with_extremes(under='Navy',over='Maroon')
-             #   if args.max_val == None: smax = 60 #math.ceil(np.max(var))
-             #   else: smax = int(args.max_val)
-             #   if args.min_val == None: smin = 0  #math.floor(np.min(var))
-             #   else: smin = int(args.min_val)
-        
-            slevels = np.arange(smin,smax+0.01,0.01)
-            
-        if args.variable == 'zSML':  
-            if args.stat_type == 'vavg':
-                smap=cmc.roma.with_extremes(under='Maroon',over='Navy')
-                if args.max_val == None: smax = 150 #math.ceil(np.max(var))
-                else: smax = int(args.max_val)
-                if args.min_val == None: smin = 0  #math.floor(np.min(var))
-                else: smin = int(args.min_val)
-            elif args.stat_type == 'vstdev':
-                smap=cmc.roma_r.with_extremes(under='Navy',over='Maroon')
-                if args.max_val == None: smax = 60 #math.ceil(np.max(var))
-                else: smax = int(args.max_val)
-                if args.min_val == None: smin = 0  #math.floor(np.min(var))
-                else: smin = int(args.min_val)
-        
-            slevels = np.arange(smin,smax+0.5,0.5)            
-        cpm = ax.contourf(data1['Lon'], data1['Lat'], data1[ii].data,slevels,cmap=smap,extend = "both")      
+        if  args.min_val == None: 
+            slevels[0]=0.2
+            slevels = np.arange(smin,smax+1,10)
+        else: 
+            slevels = np.arange(smin,smax+1,1)
+                     
+        cpm = ax.contourf(data1['Lon'], data1['Lat'], data1[ii].data,slevels,cmap=smap,extend = "max")      
         fig1.tight_layout()
         
 axc = plt.subplot2grid((4,13), (0,12), colspan=1,rowspan=4)
 cpm2 = axc.contourf(data1['Lon'], data1['Lat'], data1[ii].data,slevels,cmap=smap,extend = "both")
-if args.variable == 'zDGmax' and args.stat_type == 'vavg':
-    ff = np.floor((smax+1-smin)/10)
-    ll = [go for go in range(smin,smax+1,10)]
-    tcb = plt.gcf().colorbar(cpm2, ticks = ll, location='right',pad = 0.05, fraction = frac, label='avg zDGmax [m]')
-    tcb.ax.yaxis.set_ticks_position('left')
+if args.stat_type == 'vavg':
+    #ff = np.floor((smax+1-smin)/10)
+    if args.min_val == None:
+        ll = [go for go in range(smin,smax+1,50)]
+        ll[0]= 0.2 
+    else: 
+        ll = [go for go in range(smin,smax+1,10)] 
+        
+    tcb = plt.gcf().colorbar(cpm2, ticks = ll, location='right',pad = 0.05, fraction = frac, label='avg dz [m]')
+    tcb.ax.yaxis.set_ticks_position('right')
     #tcb.ax.yaxis.set_label_position('left')
     tcb.ax.invert_yaxis()
-elif args.variable == 'zDGmax' and args.stat_type == 'vstdev':
-    ff = np.floor((smax+1-smin)/10)
-    ll = [go for go in range(smin,smax+1,10)]
-    tcb = plt.gcf().colorbar(cpm2, ticks = ll, location='right',pad = 0.05, fraction = frac, label='stdev zDGmax')
-elif args.variable == 'zSML' and args.stat_type == 'vavg':
-    ff = np.floor((smax+1-smin)/10)
-    ll = [go for go in range(smin,smax+1,10)]
-    tcb = plt.gcf().colorbar(cpm2, ticks = ll, location='right',pad = 0.05, fraction = frac, label='avg zSML')
-    tcb.ax.yaxis.set_ticks_position('left')
-elif args.variable == 'DGmax' and args.stat_type == 'vavg':
-    #ll = np.arange(0,1.1,0.1)
-    ll = np.arange(smin,smax+0.1,0.1)
-    tcb = plt.gcf().colorbar(cpm2, ticks = ll, location='right',pad = 0.05, fraction = frac, label='avg DGmax [kg/m3/m]')
-    tcb.ax.yaxis.set_ticks_position('left')
-    #tcb.ax.yaxis.set_label_position('left')
-    #tcb.ax.invert_yaxis()   
      
 axc.remove()
 

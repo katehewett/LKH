@@ -16,7 +16,7 @@ personal computer // python
 run group_monthly_output -gtx cas7_t0_x4b -y0 2014 -y1 2021 -mvar hyp_dz -lt lowpass -stat basic 
 
 apogee: 
-python group_monthly_output.py -gtx cas7_t0_x4b -y0 2014 -y1 2021 -mvar hyp_dz -stat basic > DGmax.log &
+python group_monthly_output.py -gtx cas7_t0_x4b -y0 2014 -y1 2021 -mvar hyp_dz -lt lowpass -stat basic > hyp_dz.log &
 '''
 
 # imports

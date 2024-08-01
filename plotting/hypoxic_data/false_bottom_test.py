@@ -33,9 +33,9 @@ fn_b = fn_i + ('/LO_hypoxic_volume_lowpass_2014.01.01_2014.12.31_false_bottom.nc
 ds = xr.open_dataset(fn_a, decode_times=True)
 ds_fb = xr.open_dataset(fn_b, decode_times=True)
 
-hyp = ds['severe_dz'].values[222,:,:]
-fhyp = ds_fb['severe_dz'].values[222,:,:]
-ot = pd.to_datetime(ds['ocean_time'].values[222])
+hyp = ds['hyp_dz'].values[2,:,:]
+fhyp = ds_fb['hyp_dz'].values[2,:,:]
+ot = pd.to_datetime(ds['ocean_time'].values[2])
 
 lat = ds['lat_rho']
 lon = ds['lon_rho']
@@ -112,7 +112,7 @@ tcb = plt.gcf().colorbar(cpm2, ax=ax2, ticks = tlim, shrink = 0.3, label='diff [
 tcb.ax.yaxis.set_ticks_position('right')
 
 
-figname = 'severe_false_bot_test.png'
+figname = 'J_hyp_false_bot_test.png'
 figpath = '/Users/katehewett/Documents/LKH_output/plotting/hypoxic_data/'
 a = posixpath.join(figpath,figname)
 fig1.savefig(a)
