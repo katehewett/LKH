@@ -229,74 +229,24 @@ for ydx in range(0,numyrs):
     arr_ot = np.tile(ote,(1,NY))
     arr_mlat = np.tile(mlat,(NT,1))
 
-    svol = {}
-    svol['ocean_time'] = arr_ot
-    svol['lat_rho'] = arr_ot
-    svol['ARAG'] = ARAG
-    svol['level'] = args.surf
-    svol['source_file'] = str(fn_in)
-    svol['calc_region'] = args.job_type + str(': 30m<h<50m')
+    ARAG = {}
+    ARAG['ocean_time'] = arr_ot
+    ARAG['lat_rho'] = arr_ot
+    ARAG['ARAG'] = ARAG
+    ARAG['level'] = args.surf
+    ARAG['source_file'] = str(fn_in)
+    ARAG['calc_region'] = args.job_type + str(': 30m<h<50m')
 
-    pn = args.group+args.variable+'_regional_volumes_'+str(yr_list[ydx])+'.pkl'
+    pn = args.job_type+'_Oag_h40m_'+str(yr_list[ydx])+'.pkl'
     picklepath = fn_o/pn
         
     with open(picklepath, 'wb') as fm:
-        pickle.dump(svol, fm)
-        print('Pickled year %0.0f' % (2017))
+        pickle.dump(ARAG, fm)
+        print('Pickled year %0.0f' % yr_list[ydx])
         sys.stdout.flush()
        
 print('Total processing time all years = %0.2f sec' % (time()-tt0))
 sys.stdout.flush()
 
-sys.exit()
 
 
-
-import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.colors import BoundaryNorm
-
-# Plot the ARR data with defined levels / colormap
-x = arr_mlat
-y = ote
-xx, yy = np.meshgrid(x, y)
-
-levels = [0, 0.25, 0.5, 1, 1.5, 1.7, 3, 3.5]
-cmap = plt.get_cmap('RdBu')
-norm = BoundaryNorm(levels, ncolors=cmap.N, clip=True)
-
-
-plt.close('all')
-fs=11
-plt.rc('font', size=fs)
-height_of_image = 18 
-width_of_image = 10 
-fig1 = plt.figure(figsize=(height_of_image,width_of_image))
-fig1.set_size_inches(height_of_image,width_of_image, forward=False)
-
-# Create the pcolormesh plot
-plt.pcolormesh(arr_ot, arr_mlat, ARAG, cmap=cmap)#, norm=norm)
-plt.colorbar()
-plt.show()
-
-# with norm
-fig2 = plt.figure(figsize=(height_of_image,width_of_image))
-fig2.set_size_inches(height_of_image,width_of_image, forward=False)
-
-# Create the pcolormesh plot
-plt.pcolormesh(arr_ot, arr_mlat, ARAG, cmap=cmap, norm=norm)
-plt.colorbar()
-plt.ylim([42.75, 48.75])
-fig2.tight_layout()
-
-# take min of domain and flag when over 1.7
-minARAG = np.nanmin(ARAG,axis=1)
-
-plt.show()    
-
-
-    
-
-    
-    
-    
