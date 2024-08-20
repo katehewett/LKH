@@ -23,12 +23,18 @@ run group_volume_output -gtx cas7_t0_x4b -y0 2013 -y1 2023 -mvar arag1 -group sh
 To seperate WA and Oregon and grab volumes: 
 run group_volume_output -gtx cas7_t0_x4b -y0 2021 -y1 2021 -mvar arag1 -group bystate -job OA_indicators
 
+To seperate by Region and grab volumes: 
+run group_volume_output -gtx cas7_t0_x4b -y0 2021 -y1 2021 -mvar arag1 -group byregion -job OA_indicators
+run group_volume_output -gtx cas7_t0_x4b -y0 2013 -y1 2023 -mvar arag1 -group byregion -job OA_indicators
+
 To run on apogee, will first need to save the mask: 'OA_indicators_shelf_mask_15_200m_noEstuaries.nc'
 under LKH_data, then can run:
 python group_volume_output.py -gtx cas7_t0_x4b -y0 2021 -y1 2021 -mvar arag1 -group shelf -job OA_indicators > OA_arag1.log &
 
 Timing::
-it takes ~8-10 seconds/year to calculate and save data 
+it takes ~8-10 seconds/year to calculate and save data -shelf
+~12 seconds/year for regional calcs 
+All years, regional: Total processing time = 83.11 sec
 '''
 
 # imports
@@ -93,7 +99,7 @@ mask_shelf = dmask.mask_shelf
 #del dmask
 
 # name the output file where files will be dumped
-fn_o = Ldir['parent'] / 'LKH_output' / 'OA_indicators' / args.gtagex / 'OA_indicators' / args.group / args.variable
+fn_o = Ldir['parent'] / 'LKH_output' / 'OA_indicators' / args.gtagex / 'volumes_by_threshold' / args.group / args.variable
 Lfun.make_dir(fn_o, clean=False)
 
 for ydx in range(0,numyrs): 
@@ -211,5 +217,45 @@ for ydx in range(0,numyrs):
         with open(o_picklepath, 'wb') as fm:
             pickle.dump(svol, fm)
             print('svol/OR dict saved successfully to file')
+            
+    elif args.group == 'byregion': # bin by regions 
+        pn = args.group+args.variable+'_regional_volumes_'+str(yr_list[ydx])+'.pkl'
+        picklepath = fn_o/pn
         
+        lat_list = [48, 47, 46, 45, 44, 43]
+        mask_dict = {}
+        mask_dict[48] = (lat >47.75) & (lat <= 48.75) & (mask_shelf == 1) 
+        mask_dict[47] = (lat >46.75) & (lat <= 47.75) & (mask_shelf == 1) 
+        mask_dict[46] = (lat >45.75) & (lat <= 46.75) & (mask_shelf == 1) 
+        mask_dict[45] = (lat >44.75) & (lat <= 45.75) & (mask_shelf == 1) 
+        mask_dict[44] = (lat >43.75) & (lat <= 44.75) & (mask_shelf == 1) 
+        mask_dict[43] = (lat >=42.75) & (lat <= 43.75) & (mask_shelf == 1)
+        
+        # reminder and initialize 
+        # V_shelf = the total volume of water on rho points
+        # V = the corrosive volume on each rho point
+        V_shelf_region = {}
+        V_corrosive_region = {}
+        VR_cumsum = {}
+        
+        for mm in lat_list:
+            V_shelf_region[mm] = np.nansum(Vshelf[mask_dict[mm]])         # the total volume of shelf region [mm]; 1 value
+            V_corrosive_region[mm] = np.nansum(V[:,mask_dict[mm]],axis=1) # corrosive vol@region[mm] 365 values; 1/day
+            VR_cumsum[mm] = np.cumsum(V_corrosive_region[mm])                 # cum vol@region[mm] 365 values
+        
+        # REGIONS
+        svol = {}
+        svol['Vtotal_corr'] = V_corrosive_region
+        svol['Vtotal_shelf'] = V_shelf_region
+        svol['Vcumsum'] = VR_cumsum
+        svol['ocean_time'] = ot
+        svol['Oag_threshold'] = '<'+str(threshold)
+        svol['group'] = args.group
+        svol['calc_region'] = args.job_type + ': regions'
+        svol['vol_units'] = 'm^3'
+        
+        with open(picklepath, 'wb') as fm:
+            pickle.dump(svol, fm)
+            print('svol/Regions dict saved successfully to file')
+                       
 print('Total processing time = %0.2f sec' % (time()-tt0))
