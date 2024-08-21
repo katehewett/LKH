@@ -1,7 +1,6 @@
 """
-Plots shelf regions corrosive volume 
-but show "good" vol ABOVE 1 for each region 
-
+Plots ~h40m data mask from step0
+across all years with thresholds colored
 
 """
 # imports
@@ -22,7 +21,21 @@ import matplotlib.cm as cm
 #import cmocean
 import matplotlib.dates as mdates
 from datetime import datetime
-        
+
+# command line arugments
+parser = argparse.ArgumentParser()
+# these flags get only surface or bottom fields if True
+# - cannot have both True - It plots one or the other to avoid a 2x loop 
+parser.add_argument('-surf', default=False, type=Lfun.boolean_string)
+parser.add_argument('-bot', default=False, type=Lfun.boolean_string)
+# get the args and put into Ldir
+args = parser.parse_args()
+
+# check for input conflicts:
+if args.surf==True and args.bot==True:
+    print('Error: cannot have surf and bot both True.')
+    sys.exit()
+    
 Ldir = Lfun.Lstart()
 
 # organize and set paths before summing volumes 
@@ -37,25 +50,18 @@ h = dmask.h
 xrho = dmask.lon_rho
 yrho = dmask.lat_rho
 
-# input location for pickled files 
-fn_i = Ldir['parent'] / 'LKH_output' / 'OA_indicators' / 'cas7_t0_x4b' / 'volumes_by_threshold' / 'byregion' / 'arag1'
+# load the h mask to flag data between 35<h<45m
+fn_hmask =  Ldir['parent'] / 'LKH_data' / 'shelf_masks' / 'OA_indicators' / 'OA_indicators_h40m_mask.nc'
+hmask = xr.open_dataset(fn_hmask) 
+mask_h40m = hmask.mask_h40m.values    # 0 outside; 1 h=35-45m 
 
-#plotting details
-mask_dict = {}
-mask_dict[48] = (yrho >=47.75) & (yrho < 48.75) & (mask_shelf == 1)
-mask_dict[47] = (yrho >=46.75) & (yrho < 47.75) & (mask_shelf == 1)
-mask_dict[46] = (yrho >=45.75) & (yrho < 46.75) & (mask_shelf == 1)
-mask_dict[45] = (yrho >=44.75) & (yrho < 45.75) & (mask_shelf == 1)
-mask_dict[44] = (yrho >=43.75) & (yrho < 44.75) & (mask_shelf == 1)
-mask_dict[43] = (yrho >42.75) & (yrho < 43.75) & (mask_shelf == 1)
-NMASK = len(mask_dict)
+# input location for pickled files 
+fn_i = Ldir['parent'] / 'LKH_output' / 'OA_indicators' / 'cas7_t0_x4b' / 'oag_h40m_plots' 
+fn_b = fn_i / 'bot_h40m'
+fn_s = fn_i / 'surf_h40m'
 
 yr_list = [year for year in range(2013,2024)]
 numyrs = len(yr_list)
-
-lat_list = [48, 47, 46, 45, 44, 43]
-# Rcolors = ['#73210D','#9C6B2F','#C5B563','#A9A9A9','#77BED0','#4078B3','#112F92'] #roma w grey not green #idx 3
-Rcolors = ['#73210D','#9C6B2F','#C5B563','#77BED0','#4078B3','#112F92'] #no grey 
 
 plt.close('all')
 fs=11
@@ -67,49 +73,51 @@ fig1.set_size_inches(height_of_image,width_of_image, forward=False)
 frac=0.047 * (height_of_image / (width_of_image/13))
 
 # map
-ax = plt.subplot2grid((2,3), (0,0), colspan=1, rowspan=2)
-#ax = plt.subplot2grid((2,10), (0,0), colspan=1,rowspan=10)
-pfun.add_coast(ax)
-pfun.dar(ax)
-ax.axis([-125.5, -123.5, 42.75, 48.75])
+for idx in range(0,2):
+    ax = plt.subplot2grid((2,3), (idx,0), colspan=1, rowspan=1)
+    #ax = plt.subplot2grid((2,10), (0,0), colspan=1,rowspan=10)
+    pfun.add_coast(ax)
+    pfun.dar(ax)
+    ax.axis([-125.5, -123.5, 42.75, 48.75])
 
-ax.contour(xrho,yrho,h, [40],
-colors=['white'], linewidths=1, linestyles='solid',alpha=0.4)
-ax.contour(xrho,yrho,h, [80],
-colors=['black'], linewidths=1, linestyles='solid',alpha=0.4)
-ax.contour(xrho,yrho,h, [200],
-colors=['black'], linewidths=1, linestyles='solid',alpha=0.6)
-ax.contour(xrho,yrho,h, [1000],
-colors=['black'], linewidths=1, linestyles='solid')
-
-ax.text(0.95,.10,'40 m',color='lightgrey',weight='bold',transform=ax.transAxes,ha='right')
-ax.text(0.95,.07,'80 m',color='black',weight='bold',transform=ax.transAxes,ha='right')
-ax.text(0.95,.04,'*200 m',color='black',weight='bold',fontstyle = 'italic',transform=ax.transAxes,ha='right')
-ax.text(0.95,.01,'1000 m',color='black',weight='bold',transform=ax.transAxes,ha='right')
+    ax.contour(xrho,yrho,h, [40],
+    colors=['white'], linewidths=1, linestyles='solid',alpha=0.4)
+    ax.contour(xrho,yrho,h, [80],
+    colors=['black'], linewidths=1, linestyles='solid',alpha=0.4)
+    ax.contour(xrho,yrho,h, [200],
+    colors=['black'], linewidths=1, linestyles='solid',alpha=0.6)
+    ax.contour(xrho,yrho,h, [1000],
+    colors=['black'], linewidths=1, linestyles='solid')
       
-ax.set_title('Area of Calculation')
-ax.set_xlabel('Longitude')
-ax.set_ylabel('Latitude')
-ax.set_xticks([-125.5, -124.5, -123.5])
-ax.set_yticks([42.75,43,44,45,46,47,48,48.75])
-ax.set_yticklabels(['42.75','43','44','45','46','47','48','48.75'])
-ax.xaxis.set_ticklabels([-125.5, -124.5 , -123.5])
-ax.xaxis.set_ticklabels([-125.5, -124.5 , -123.5])
-ax.grid(False)
+    ax.set_title('h40m')
+    ax.set_xlabel('Longitude')
+    ax.set_ylabel('Latitude')
+    ax.set_xticks([-125.5, -124.5, -123.5])
+    ax.set_yticks([42.75,43,44,45,46,47,48,48.75])
+    ax.set_yticklabels(['42.75','43','44','45','46','47','48','48.75'])
+    ax.xaxis.set_ticklabels([-125.5, ' ' , -123.5])
+    ax.grid(False)
 
-# shade regions
-ii = 0
-for mm in lat_list:
-    pts2 = ax.scatter(xrho*mask_dict[mm], yrho*mask_dict[mm], s=2, c = Rcolors[ii])
-    ii = ii+1
+    pts2 = ax.scatter(xrho*mask_h40m, yrho*mask_h40m, s=1, c = 'mediumseagreen')
 
-ax1 = plt.subplot2grid((2,3), (0,1), colspan=2) # 2013 - 2017
-ax2 = plt.subplot2grid((2,3), (1,1), colspan=2) # 2018 - 2023
+#fig1.savefig('/Users/katehewett/Documents/LKH_output/OA_indicators/cas7_t0_x4b/oag_h40m_plots/plot_output/map_NEW.png')
+
+if args.surf==True: 
+    axp = plt.subplot2grid((2,3), (0,1), colspan=2) # surface
+elif args.bot==True: 
+    axp = plt.subplot2grid((2,3), (1,1), colspan=2) # bottom
+
 fig1.tight_layout()
+        
+print('hello')
 
 for ydx in range(0,numyrs): 
-    pn = pn = 'byregion_arag1_regional_volumes_'+str(yr_list[ydx])+'.pkl'
-    picklepath = fn_i / pn  
+    
+    pn = 'OA_indicators_Oag_h40m_'+str(yr_list[ydx])+'.pkl'
+    if args.surf==True: 
+        picklepath = fn_s/pn
+    elif args.bot==True: 
+        picklepath = fn_b/pn
     
     if os.path.isfile(picklepath)==False:
         print('no file named: ' + pn)
@@ -117,9 +125,10 @@ for ydx in range(0,numyrs):
     
     # Load the dictionary from the file
     with open(picklepath, 'rb') as fp:
-        svol = pickle.load(fp)
+        ARAG = pickle.load(fp)
         print('loaded'+str(yr_list[ydx]))
 
+    sys.exit()
         #svol['Vtotal_corr'] = V_corrosive_region
         #svol['Vtotal_shelf'] = V_shelf_region
         #svol['Vcumsum'] = VR_cumsum
@@ -177,7 +186,7 @@ for ydx in range(0,numyrs):
         ii = ii + 1
 
 
-fig1.savefig('/Users/katehewett/Documents/LKH_output/OA_indicators/cas7_t0_x4b/volumes_by_threshold/byregion/arag1/plots/Oag_regional_above1_NEW.png')
+fig1.savefig('/Users/katehewett/Documents/LKH_output/OA_indicators/cas7_t0_x4b/oag_h40m_plots/plot_output/map_NEW.png')
 
 
 

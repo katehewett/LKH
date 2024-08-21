@@ -147,6 +147,8 @@ for ydx in range(0,numyrs):
     pfun.dar(ax)
     ax.axis([-130, -122, 42, 52])
     
+    ax.contour(lon,lat,h, [20,40,80,100], colors=['red'], linewidths=1, linestyles='solid',alpha=0.8)
+    
     SP = ds.salt.values               # practical salinity
     SP[:,mask_shelf==0] = np.nan        
     h[mask_shelf==0] = np.nan   
@@ -154,6 +156,8 @@ for ydx in range(0,numyrs):
     Zvar = SP[100,:,:].squeeze()
     ax.pcolormesh(lon,lat,Zvar)
     contours = ax.contour(lon,lat,h, [40], colors=['red'], linewidths=1, linestyles='solid',alpha=0.8)
+    
+    
     
     # Find the index of the contour line corresponding to the level
     # where we want to extract data 

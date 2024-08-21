@@ -23,6 +23,9 @@ run group_volume_output -gtx cas7_t0_x4b -y0 2013 -y1 2023 -mvar arag1 -group sh
 To seperate WA and Oregon and grab volumes: 
 run group_volume_output -gtx cas7_t0_x4b -y0 2021 -y1 2021 -mvar arag1 -group bystate -job OA_indicators
 
+run group_volume_output -gtx cas7_t0_x4b -y0 2013 -y1 2023 -mvar arag1 -group bystate -job OA_indicators
+run group_volume_output -gtx cas7_t0_x4b -y0 2013 -y1 2023 -mvar arag05 -group bystate -job OA_indicators
+
 To seperate by Region and grab volumes: 
 run group_volume_output -gtx cas7_t0_x4b -y0 2021 -y1 2021 -mvar arag1 -group byregion -job OA_indicators
 run group_volume_output -gtx cas7_t0_x4b -y0 2013 -y1 2023 -mvar arag1 -group byregion -job OA_indicators
@@ -170,23 +173,26 @@ for ydx in range(0,numyrs):
         pno = args.group+'_OR_'+args.variable+'_volumes_'+str(yr_list[ydx])+'.pkl'
         o_picklepath = fn_o/pno
     
-        Vor_shelf = np.copy(Vshelf)
-        Vwa_shelf = np.copy(Vshelf)
+        Vor_shelf = np.copy(Vshelf) # the whole water column total volume
+        Vwa_shelf = np.copy(Vshelf) 
     
-        V_or = np.copy(V)
-        V_wa = np.copy(V)
+        V_or = np.copy(V) # volume of corrosive water 
+        V_wa = np.copy(V) 
     
-        Vor_shelf[lat>46.25] = 0 # Oregon 
-        V_or[lat>46.25] = 0
+        Vor_shelf[lat>46.25] = 0  # set WA to zero 
+        V_or[:,lat>46.25] = 0
     
-        Vwa_shelf[lat<=46.25] = 0  # Washington+
-        V_wa[lat<=46.25] = 0
+        Vwa_shelf[lat<=46.25] = 0  # set Oregon to zero 
+        V_wa[:,lat<=46.25] = 0
 
-        Vwa_corr = np.sum(V_wa, axis = (1,2)) # the total volume of corrosive water across the shelf
-        Vwa_shelf = np.sum(V_wa)              # the total OA_indicators job shelf volume 
+        Vwa_shelf = np.sum(Vwa_shelf)              # Total WC volume @ WA+
+        Vwa_corr = np.sum(V_wa, axis = (1,2))      # Total corrosive volume @ WA+ per year day        
+
+        Vor_shelf = np.sum(Vor_shelf)              # Total WC volume @ OR
+        Vor_corr = np.sum(V_or, axis = (1,2))      # Total corrosive volume @ OR per year day          
     
-        Vwa_cumsum = np.cumsum(Vwa_corr)
-        Vwa_cumsum = np.cumsum(Vwa_corr)
+        Vwa_cumsum = np.cumsum(Vwa_corr)           # cumulative volumes 
+        Vor_cumsum = np.cumsum(Vor_corr)
         
         # Washington+ shelf 
         svol = {}
@@ -219,7 +225,7 @@ for ydx in range(0,numyrs):
             print('svol/OR dict saved successfully to file')
             
     elif args.group == 'byregion': # bin by regions 
-        pn = args.group+args.variable+'_regional_volumes_'+str(yr_list[ydx])+'.pkl'
+        pn = args.group+'_'+args.variable+'_regional_volumes_'+str(yr_list[ydx])+'.pkl'
         picklepath = fn_o/pn
         
         lat_list = [48, 47, 46, 45, 44, 43]

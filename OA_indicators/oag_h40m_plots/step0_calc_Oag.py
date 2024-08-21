@@ -17,7 +17,10 @@ General workflow:
 Examples of how to call the script:
 On personal computer with python open:
 To grab all of the shelf for the OA_indicators job list:
-run step1_extract_h40m_data -gtx cas7_t0_x4b -y0 2017 -y1 2017 -job OA_indicators -surf True -test True
+run step0_calc_Oag -gtx cas7_t0_x4b -y0 2017 -y1 2017 -job OA_indicators -surf True -test True
+
+apogee: 
+python step0_calc_Oag.py -gtx cas7_t0_x4b -y0 2013 -y1 2023 -job OA_indicators -surf True > surf.log&
 
 Notes on testing: at first we tried to loop thru per day slices to calc ARAG (because the 3D array gets 
 bogged down in CO2SYS. For those carbon calcs if mask_rho==1 it took ~8 seconds/day to calc ARAG
@@ -215,7 +218,7 @@ for ydx in range(0,numyrs):
     CO2dict = pyco2.sys(par1=mALK1, par1_type=1, par2=mTIC1, par2_type=2,
         salinity=mSP, temperature=mti, pressure=mPres,
         total_silicate=50, total_phosphate=2, opt_k_carbonic=10, opt_buffers_mode=0)
-    ARAG = CO2dict['saturation_aragonite']
+    cARAG = CO2dict['saturation_aragonite']
     
     print('Time to calculate ARAG for one year = %0.2f sec' % (time()-tt2))
     sys.stdout.flush()
@@ -223,7 +226,7 @@ for ydx in range(0,numyrs):
     sys.stdout.flush()
     
     # expand time and mlat dims to match ARAG
-    NT,NY =  np.shape(ARAG)
+    NT,NY =  np.shape(cARAG)
 
     ote = np.expand_dims(ot,axis=1)
     arr_ot = np.tile(ote,(1,NY))
@@ -231,22 +234,65 @@ for ydx in range(0,numyrs):
 
     ARAG = {}
     ARAG['ocean_time'] = arr_ot
-    ARAG['lat_rho'] = arr_ot
-    ARAG['ARAG'] = ARAG
-    ARAG['level'] = args.surf
+    ARAG['lat_rho'] = arr_mlat
+    ARAG['ARAG'] = cARAG
+    if args.surf == True:
+        ARAG['level'] = 'surf'   
+    elif args.bot ==True:
+        ARAG['level'] = 'bot'  
     ARAG['source_file'] = str(fn_in)
     ARAG['calc_region'] = args.job_type + str(': 30m<h<50m')
 
     pn = args.job_type+'_Oag_h40m_'+str(yr_list[ydx])+'.pkl'
     picklepath = fn_o/pn
         
-    with open(picklepath, 'wb') as fm:
-        pickle.dump(ARAG, fm)
-        print('Pickled year %0.0f' % yr_list[ydx])
-        sys.stdout.flush()
+    #with open(picklepath, 'wb') as fm:
+        #pickle.dump(ARAG, fm)
+        #print('Pickled year %0.0f' % yr_list[ydx])
+        #sys.stdout.flush()
        
 print('Total processing time all years = %0.2f sec' % (time()-tt0))
 sys.stdout.flush()
+
+sys.exit()
+
+# Plot the ARR data with defined levels / colormap
+x = arr_mlat
+y = ote
+xx, yy = np.meshgrid(x, y)
+
+levels = [0, 0.25, 0.5, 1, 1.5, 1.7, 3, 3.5]
+cmap = plt.get_cmap('RdBu')
+norm = BoundaryNorm(levels, ncolors=cmap.N, clip=True)
+
+
+plt.close('all')
+fs=11
+plt.rc('font', size=fs)
+height_of_image = 18 
+width_of_image = 10 
+fig1 = plt.figure(figsize=(height_of_image,width_of_image))
+fig1.set_size_inches(height_of_image,width_of_image, forward=False)
+
+# Create the pcolormesh plot
+plt.pcolormesh(arr_ot, arr_mlat, ARAG, cmap=cmap)#, norm=norm)
+plt.colorbar()
+plt.show()
+
+# with norm
+fig2 = plt.figure(figsize=(height_of_image,width_of_image))
+fig2.set_size_inches(height_of_image,width_of_image, forward=False)
+
+# Create the pcolormesh plot
+plt.pcolormesh(arr_ot, arr_mlat, ARAG, cmap=cmap, norm=norm)
+plt.colorbar()
+plt.ylim([42.75, 48.75])
+fig2.tight_layout()
+
+# take min of domain and flag when over 1.7
+minARAG = np.nanmin(ARAG,axis=1)
+
+plt.show()    
 
 
 
