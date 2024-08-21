@@ -21,6 +21,7 @@ import matplotlib.cm as cm
 #import cmocean
 import matplotlib.dates as mdates
 from datetime import datetime
+from matplotlib.colors import BoundaryNorm
 
 # command line arugments
 parser = argparse.ArgumentParser()
@@ -109,8 +110,6 @@ elif args.bot==True:
 
 fig1.tight_layout()
         
-print('hello')
-
 for ydx in range(0,numyrs): 
     
     pn = 'OA_indicators_Oag_h40m_'+str(yr_list[ydx])+'.pkl'
@@ -125,9 +124,23 @@ for ydx in range(0,numyrs):
     
     # Load the dictionary from the file
     with open(picklepath, 'rb') as fp:
-        ARAG = pickle.load(fp)
+        oARAG = pickle.load(fp)
         print('loaded'+str(yr_list[ydx]))
 
+    y = oARAG['arr_mlat']
+    x = oARAG['ocean_time']
+    ARAG = oARAG['ARAG']
+
+    levels = [0, 0.25, 0.5, 1, 1.5, 1.7, 3, 3.5]
+    cmap = plt.get_cmap('RdBu')
+    norm = BoundaryNorm(levels, ncolors=cmap.N, clip=True)
+
+    # Create the pcolormesh plot
+    axp.pcolormesh(x, y, ARAG, cmap=cmap, norm=norm)
+    axp.colorbar()
+    plt.ylim([42.75, 48.75])
+    fig2.tight_layout()
+    
     sys.exit()
         #svol['Vtotal_corr'] = V_corrosive_region
         #svol['Vtotal_shelf'] = V_shelf_region

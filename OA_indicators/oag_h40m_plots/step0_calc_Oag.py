@@ -246,10 +246,10 @@ for ydx in range(0,numyrs):
     pn = args.job_type+'_Oag_h40m_'+str(yr_list[ydx])+'.pkl'
     picklepath = fn_o/pn
         
-    #with open(picklepath, 'wb') as fm:
-        #pickle.dump(ARAG, fm)
-        #print('Pickled year %0.0f' % yr_list[ydx])
-        #sys.stdout.flush()
+    with open(picklepath, 'wb') as fm:
+        pickle.dump(ARAG, fm)
+        print('Pickled year %0.0f' % yr_list[ydx])
+        sys.stdout.flush()
        
 print('Total processing time all years = %0.2f sec' % (time()-tt0))
 sys.stdout.flush()
@@ -275,7 +275,7 @@ fig1 = plt.figure(figsize=(height_of_image,width_of_image))
 fig1.set_size_inches(height_of_image,width_of_image, forward=False)
 
 # Create the pcolormesh plot
-plt.pcolormesh(arr_ot, arr_mlat, ARAG, cmap=cmap)#, norm=norm)
+plt.pcolormesh(arr_ot, arr_mlat, ARAG['ARAG'].values.squeeze(), cmap=cmap)#, norm=norm)
 plt.colorbar()
 plt.show()
 
@@ -284,7 +284,7 @@ fig2 = plt.figure(figsize=(height_of_image,width_of_image))
 fig2.set_size_inches(height_of_image,width_of_image, forward=False)
 
 # Create the pcolormesh plot
-plt.pcolormesh(arr_ot, arr_mlat, ARAG, cmap=cmap, norm=norm)
+plt.pcolormesh(arr_ot, arr_mlat, ARAG['ARAG'], cmap=cmap, norm=norm)
 plt.colorbar()
 plt.ylim([42.75, 48.75])
 fig2.tight_layout()
