@@ -61,7 +61,7 @@ fn_i = Ldir['parent'] / 'LKH_output' / 'OA_indicators' / 'cas7_t0_x4b' / 'oag_h4
 fn_b = fn_i / 'bot_h40m'
 fn_s = fn_i / 'surf_h40m'
 
-yr_list = [year for year in range(2013,2024)]
+yr_list = [2020,2021,2022,2023]
 numyrs = len(yr_list)
 
 plt.close('all')
@@ -142,31 +142,18 @@ for ydx in range(0,numyrs):
     axp.set_yticks([42.75,43,44,45,46,47,48,48.75])
     axp.set_yticklabels(['42.75','43','44','45','46','47','48','48.75'])
         
-    axp.set_xlim(datetime(2013,1,1), datetime(2024,1,1))
+    axp.set_xlim(datetime(2020,1,1), datetime(2024,1,1))
     
-    plt.axvline(x = datetime(2013,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2014,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2015,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2016,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2017,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2018,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2019,1,1), color = 'k', label = 'axvline - full height')
     plt.axvline(x = datetime(2020,1,1), color = 'k', label = 'axvline - full height')
     plt.axvline(x = datetime(2021,1,1), color = 'k', label = 'axvline - full height')
     plt.axvline(x = datetime(2022,1,1), color = 'k', label = 'axvline - full height')
     plt.axvline(x = datetime(2023,1,1), color = 'k', label = 'axvline - full height')
     
-    axp.set_xticks([datetime(2013,1,1),datetime(2013,7,1),datetime(2014,1,1), datetime(2014,7,1),
-    datetime(2015,1,1),datetime(2015,7,1),datetime(2016,1,1), datetime(2016,7,1),
-    datetime(2017,1,1),datetime(2017,7,1),datetime(2018,1,1), datetime(2018,7,1),
-    datetime(2019,1,1),datetime(2019,7,1),datetime(2020,1,1),datetime(2020,7,1),
+    axp.set_xticks([datetime(2020,1,1),datetime(2020,7,1),
     datetime(2021,1,1),datetime(2021,7,1),datetime(2022,1,1),datetime(2022,7,1),
     datetime(2023,1,1),datetime(2023,7,1),datetime(2023,12,31)])
     
-    axp.set_xticklabels(['Jan13','Jul','Jan14', 'Jul',
-    'Jan15','Jul','Jan16', 'Jul',
-    'Jan17','Jul','Jan18', 'Jul',
-    'Jan19','Jul','Jan20','Jul',
+    axp.set_xticklabels(['Jan20','Jul',
     'Jan21','Jul','Jan22','Jul',
     'Jan23','Jul','Jan24'])
     

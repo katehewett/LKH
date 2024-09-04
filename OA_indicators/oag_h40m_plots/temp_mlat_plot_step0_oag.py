@@ -127,7 +127,13 @@ for ydx in range(0,numyrs):
         A = pickle.load(fp3)
         print('loaded'+str(yr_list[ydx]))
     
-    y = A['lat_rho']
+    # temp mlat error -- 2xsaved otime and not mlat 
+    tpp = fn_i / 'temp_mlat.pkl'
+    with open(tpp, 'rb') as fp2:
+        y = pickle.load(fp2)
+    # end temp 
+    
+    #y = A['arr_mlat']
     x = A['ocean_time']
     ARAG = A['ARAG']
 
@@ -137,53 +143,69 @@ for ydx in range(0,numyrs):
 
     # Create the pcolormesh plot
     axp.pcolormesh(x, y, ARAG, cmap=cmap, norm=norm)
-    #axp.colorbar()
-    #plt.ylim([42.75, 48.75])
-    axp.set_yticks([42.75,43,44,45,46,47,48,48.75])
-    axp.set_yticklabels(['42.75','43','44','45','46','47','48','48.75'])
+    axp.colorbar()
+    plt.ylim([42.75, 48.75])
+    fig2.tight_layout()
+    
+    sys.exit()
+        #svol['Vtotal_corr'] = V_corrosive_region
+        #svol['Vtotal_shelf'] = V_shelf_region
+        #svol['Vcumsum'] = VR_cumsum
+        #svol['ocean_time'] = ot
+        #svol['Oag_threshold'] = '<'+str(threshold)
+        #svol['group'] = args.group
+        #svol['calc_region'] = args.job_type + ': regions'
+        #svol['vol_units'] = 'm^3'
         
-    axp.set_xlim(datetime(2013,1,1), datetime(2024,1,1))
+    Vregion = svol['Vtotal_corr']
+    Vtotal = svol['Vtotal_shelf']
+    ot = svol['ocean_time']
     
-    plt.axvline(x = datetime(2013,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2014,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2015,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2016,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2017,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2018,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2019,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2020,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2021,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2022,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2023,1,1), color = 'k', label = 'axvline - full height')
-    
-    axp.set_xticks([datetime(2013,1,1),datetime(2013,7,1),datetime(2014,1,1), datetime(2014,7,1),
-    datetime(2015,1,1),datetime(2015,7,1),datetime(2016,1,1), datetime(2016,7,1),
-    datetime(2017,1,1),datetime(2017,7,1),datetime(2018,1,1), datetime(2018,7,1),
-    datetime(2019,1,1),datetime(2019,7,1),datetime(2020,1,1),datetime(2020,7,1),
-    datetime(2021,1,1),datetime(2021,7,1),datetime(2022,1,1),datetime(2022,7,1),
-    datetime(2023,1,1),datetime(2023,7,1),datetime(2023,12,31)])
-    
-    axp.set_xticklabels(['Jan13','Jul','Jan14', 'Jul',
-    'Jan15','Jul','Jan16', 'Jul',
-    'Jan17','Jul','Jan18', 'Jul',
-    'Jan19','Jul','Jan20','Jul',
-    'Jan21','Jul','Jan22','Jul',
-    'Jan23','Jul','Jan24'])
-    
-    axp.grid(True)
-
-    if args.surf==True: 
-        axp.set_title('Surface layer \u03A9 ag')
-    elif args.bot==True: 
-        axp.set_title('Bottom layer \u03A9 ag')
+    #if yr_list[ydx] < 2019: 
+    #    axf = ax1 
+    #else: 
+    #    axf = ax2
         
-    axp.set_ylabel('Latitude')        
+    Vabove = {}
+    Vpercent = {}
+    
+    ii = 0
+    for mm in lat_list:
+        Vabove[mm] = Vtotal[mm] - Vregion[mm]
+        Vpercent[mm] = (Vabove[mm]/Vtotal[mm])*100 
 
-if args.surf==True: 
-    fig1.savefig('/Users/katehewett/Documents/LKH_output/OA_indicators/cas7_t0_x4b/oag_h40m_plots/plot_output/Ysurf_map_Oag_NEW.png')
-elif args.bot==True: 
-    fig1.savefig('/Users/katehewett/Documents/LKH_output/OA_indicators/cas7_t0_x4b/oag_h40m_plots/plot_output/Ybot_map_Oag_NEW.png')
+        if ii < 3:
+            axf = ax1
+            axf.set_title('Shelf percent volume by region with \u03A9 ag > 1')
+        else: 
+            axf = ax2 
+            
+        axf.plot(ot,Vpercent[mm],c = Rcolors[ii],linewidth=2, alpha=0.8)
+        axf.grid(True)
+        axf.set_ylabel('shelf percent volume')
+        
+        axf.set_xlim(datetime(2013,1,1), datetime(2024,1,1))
+        axf.set_ylim(0,100)
+        
+        axf.set_xticks([datetime(2013,1,1),datetime(2013,7,1),datetime(2014,1,1), datetime(2014,7,1),
+        datetime(2015,1,1),datetime(2015,7,1),datetime(2016,1,1), datetime(2016,7,1),
+        datetime(2017,1,1),datetime(2017,7,1),datetime(2018,1,1), datetime(2018,7,1),
+        datetime(2019,1,1),datetime(2019,7,1),datetime(2020,1,1),datetime(2020,7,1),
+        datetime(2021,1,1),datetime(2021,7,1),datetime(2022,1,1),datetime(2022,7,1),
+        datetime(2023,1,1),datetime(2023,7,1),datetime(2023,12,31)])
+    
+        axf.set_xticklabels(['Jan13','Jul','Jan14', 'Jul',
+        'Jan15','Jul','Jan16', 'Jul',
+        'Jan17','Jul','Jan18', 'Jul',
+        'Jan19','Jul','Jan20','Jul',
+        'Jan21','Jul','Jan22','Jul',
+        'Jan23','Jul','Jan24'])
 
+        
+        ii = ii + 1
+
+
+fig1.savefig('/Users/katehewett/Documents/LKH_output/OA_indicators/cas7_t0_x4b/oag_h40m_plots/plot_output/map_NEW.png')
 
 
 
