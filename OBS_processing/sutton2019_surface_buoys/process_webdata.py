@@ -17,8 +17,12 @@ import numpy as np
 import posixpath
 import datetime 
 import gsw 
+import xarray as xr
+import os
+import sys
+from lo_tools import Lfun, zfun
 
-testing = True 
+testing = False 
 
 # def function to read .txt with text before the header lines
 # need to put in seperate file under /LKH so can call ::
@@ -46,13 +50,19 @@ def read_data_with_header(fn_i, header_keyword):
 datapath = '/Users/katehewett/Documents/LKH_data/sutton2019_surface_buoys'
 out_dir = posixpath.join(datapath, 'py_files')
 in_dir = posixpath.join(datapath, 'data_files')
-   
+
+if os.path.exists(out_dir)==False:
+    Lfun.make_dir(out_dir, clean = False)
+if os.path.exists(in_dir)==False:
+    print('input path does not exist')
+    sys.exit()
+
 # run the 5 files; all have the same header order 
 header_keyword = 'datetime_utc	SST	SSS	pCO2_sw	pCO2_air	xCO2_air	pH_sw	DOXY	CHL	NTU'
 sn_name_dict = {
     'CHABA':'Chaba',
-    'CE':'Cape Elizabeth',
-    'CA':'Cape Arago',
+    'CAPEELIZABETH':'Cape Elizabeth',
+    'CAPEARAGO':'Cape Arago',
     'CCE1':'California Current Ecosystem 1', 
     'CCE2':'California Current Ecosystem 2'
 }
@@ -71,23 +81,24 @@ for sn in sn_list:
     print(df)
     
     dt = pd.to_datetime(df.datetime_utc)
-    IT = df.SST
-    SP = df.SSS
-    pCO2_sw = df.pCO2_sw
-    pCO2_air = df.pCO2_air
-    xCO2_air = df.xCO2_air
-    pH = df.pH_sw
-    DOXY = df.DOXY
-    CHL = df.CHL
-    NTU = df.NTU
+    IT = np.array(df.SST)
+    SP = np.array(df.SSS)
+    pCO2_sw = np.array(df.pCO2_sw)
+    pCO2_air = np.array(df.pCO2_air)
+    xCO2_air = np.array(df.xCO2_air)
+    pH = np.array(df.pH_sw)
+    DOXY = np.array(df.DOXY)
+    CHL = np.array(df.CHL)
+    NTU = np.array(df.NTU)
     
+    del lat,lon
     if sn == 'CHABA':
         lat = 47.936
         lon = -125.958
-    elif sn == 'CE':
+    elif sn == 'CAPEELIZABETH':
         lat = 47.353
         lon = -124.731
-    elif sn == 'CA':
+    elif sn == 'CAPEARAGO':
         lat = 43.320
         lon = -124.500
     elif sn == 'CCE1':
@@ -101,35 +112,60 @@ for sn in sn_list:
     P = gsw.p_from_z(Z,lat)
     SA = gsw.SA_from_SP(SP, P, lon, lat)
     CT = gsw.CT_from_t(SA, IT, P)
-    SIG0 = gsw.sigma0(SA,CT) # potential density relative to 0 dbar, minus 1000 kg m-3
+    SIG0 = gsw.sigma0(SA,CT) # potential density anomaly w/ ref. pressure of 0 [RHO-1000 kg/m^3]
     DENS = SIG0 + 1000
     
+    # DOXY saved as umol/kg ; and LO saved as uM (convert using potential density)
     DO = DOXY * DENS * (1/1000) # DOXY[umol/kg] * DENS[kg/m3] * [m3/L] 
     
     #initialize new dataset and fill
     coords = {'time':('time',dt)}
-    ds = xr.Dataset(coords=coords, attrs={'Station Name':sn_name_dict[sn],'lon':lon,'lat':lat})
+    ds = xr.Dataset(coords=coords, 
+        attrs={'Station Name':sn_name_dict[sn],'lon':lon,'lat':lat,
+               'Depth':'surface 0.5m',
+               'Source file':str(in_fn),'data citation': 'Sutton et al. 2019'})
     
-    ds['SA'] = xr.DataArray(SA, dims=('time','z'),
+    ds['SA'] = xr.DataArray(SA, dims=('time'),
         attrs={'units':'g kg-1', 'long_name':'Absolute Salinity'})
-    ds['SP'] = xr.DataArray(SA, dims=('time','z'),
-        attrs={'units':' ', 'long_name':'Practical Salinity'})
-    ds['IT'] = xr.DataArray(IT, dims=('time','z'),
-        attrs={'units':'degC', 'long_name':'Insitu Temperature'})
-    ds['CT'] = xr.DataArray(CT, dims=('time','z'),
-        attrs={'units':'degC', 'long_name':'Conservative Temperature'})
-    ds['DO (uM)'] = xr.DataArray(DO, dims=('time','z'),
-        attrs={'units':'uM', 'long_name':'Dissolved Oxygen'})
-    ds['SIG0'] = xr.DataArray(SIG0, dims=('time','z'),
-        attrs={'units':'kg m-3', 'long_name':'Sigma0'})
         
-    
-    
-    
-    
-    
+    ds['SP'] = xr.DataArray(SP, dims=('time'),
+        attrs={'units':' ', 'long_name':'Practical Salinity', 'depth':str('0.5m')})
+        
+    ds['IT'] = xr.DataArray(IT, dims=('time'),
+        attrs={'units':'degC', 'long_name':'Insitu Temperature', 'depth':str('0.5m')})
+        
+    ds['CT'] = xr.DataArray(CT, dims=('time'),
+        attrs={'units':'degC', 'long_name':'Conservative Temperature', 'depth':str('0.5m')})
 
+    ds['SIG0'] = xr.DataArray(SIG0, dims=('time'),
+        attrs={'units':'kg/m3', 'long_name':'Potential Density Anomaly'})
+                
+    ds['DO (uM)'] = xr.DataArray(DO, dims=('time'),
+        attrs={'units':'uM', 'long_name':'Dissolved Oxygen'})
+       
+    ds['DOXY (uM)'] = xr.DataArray(DOXY, dims=('time'),
+        attrs={'units':'umol/kg', 'long_name':'Dissolved Oxygen', 'depth':str('0.5m')})
+         
+    ds['pCO2_sw'] = xr.DataArray(pCO2_sw, dims=('time'),
+        attrs={'units':'uatm', 'long_name':'seawater pCO2', 'depth':str('<0.5m')})
+        
+    ds['pCO2_air'] = xr.DataArray(pCO2_air, dims=('time'),
+        attrs={'units':'uatm', 'long_name':'air pCO2', 'depth':str('0.5-1m')})
+        
+    ds['xCO2_air'] = xr.DataArray(xCO2_air, dims=('time'),
+        attrs={'units':'uatm', 'long_name':'air xCO2', 'depth':str('0.5-1m')})   
+    
+    ds['pH'] = xr.DataArray(pH, dims=('time'),
+        attrs={'units':' ', 'long_name':'seawater pH', 'depth':str('0.5-1m')})
+    
+    ds['CHL'] = xr.DataArray(CHL, dims=('time'),
+        attrs={'units':'ug/L', 'long_name':'fluorescence-based nighttime chlorophyll-a', 'depth':str('0.5m')})  
+        
+    ds['Turbidity'] = xr.DataArray(NTU, dims=('time'),
+        attrs={'units':'NTU', 'long_name':'turbidity', 'depth':str('0.5m')})
 
+    if not testing:
+        ds.to_netcdf(out_fn, unlimited_dims='time')
 
 
 
