@@ -1,4 +1,5 @@
 '''
+Step 1: 
 This code is to pull and process data from a NOAA data product for 5 buoys:
     Chaba buoy : https://www.pmel.noaa.gov/co2/timeseries/CHABA.txt
     Cape Elizabeth buoy : https://www.pmel.noaa.gov/co2/timeseries/CAPEELIZABETH.txt
@@ -6,7 +7,7 @@ This code is to pull and process data from a NOAA data product for 5 buoys:
     CCE2 buoy : https://www.pmel.noaa.gov/co2/timeseries/CCE2.txt
     CCE1 buoy : https://www.pmel.noaa.gov/co2/timeseries/CCE1.txt
 
-and then convert and save in LO format for model-obs comparisons.
+save for model-obs comparisons.
 
 see README.txt for more information and data source information
 
@@ -52,7 +53,7 @@ out_dir = posixpath.join(datapath, 'py_files')
 in_dir = posixpath.join(datapath, 'data_files')
 
 if os.path.exists(out_dir)==False:
-    Lfun.make_dir(out_dir, clean = False)
+    Lfun.make_dir(out_dir, clean = True)
 if os.path.exists(in_dir)==False:
     print('input path does not exist')
     sys.exit()
@@ -91,7 +92,6 @@ for sn in sn_list:
     CHL = np.array(df.CHL)
     NTU = np.array(df.NTU)
     
-    del lat,lon
     if sn == 'CHABA':
         lat = 47.936
         lon = -125.958
@@ -119,53 +119,55 @@ for sn in sn_list:
     DO = DOXY * DENS * (1/1000) # DOXY[umol/kg] * DENS[kg/m3] * [m3/L] 
     
     #initialize new dataset and fill
-    coords = {'time':('time',dt)}
+    coords = {'time_utc':('time_utc',dt)}
     ds = xr.Dataset(coords=coords, 
         attrs={'Station Name':sn_name_dict[sn],'lon':lon,'lat':lat,
                'Depth':'surface 0.5m',
                'Source file':str(in_fn),'data citation': 'Sutton et al. 2019'})
     
-    ds['SA'] = xr.DataArray(SA, dims=('time'),
-        attrs={'units':'g kg-1', 'long_name':'Absolute Salinity'})
+    ds['SA'] = xr.DataArray(SA, dims=('time_utc'),
+        attrs={'units':'g kg-1', 'long_name':'Absolute Salinity', 'depth':str('0.5m')})
         
-    ds['SP'] = xr.DataArray(SP, dims=('time'),
+    ds['SP'] = xr.DataArray(SP, dims=('time_utc'),
         attrs={'units':' ', 'long_name':'Practical Salinity', 'depth':str('0.5m')})
         
-    ds['IT'] = xr.DataArray(IT, dims=('time'),
+    ds['IT'] = xr.DataArray(IT, dims=('time_utc'),
         attrs={'units':'degC', 'long_name':'Insitu Temperature', 'depth':str('0.5m')})
         
-    ds['CT'] = xr.DataArray(CT, dims=('time'),
+    ds['CT'] = xr.DataArray(CT, dims=('time_utc'),
         attrs={'units':'degC', 'long_name':'Conservative Temperature', 'depth':str('0.5m')})
 
-    ds['SIG0'] = xr.DataArray(SIG0, dims=('time'),
-        attrs={'units':'kg/m3', 'long_name':'Potential Density Anomaly'})
+    ds['SIG0'] = xr.DataArray(SIG0, dims=('time_utc'),
+        attrs={'units':'kg/m3', 'long_name':'Potential Density Anomaly', 'depth':str('0.5m')})
                 
-    ds['DO (uM)'] = xr.DataArray(DO, dims=('time'),
-        attrs={'units':'uM', 'long_name':'Dissolved Oxygen'})
+    ds['DO (uM)'] = xr.DataArray(DO, dims=('time_utc'),
+        attrs={'units':'uM', 'long_name':'Dissolved Oxygen', 'depth':str('0.5m')})
        
-    ds['DOXY (uM)'] = xr.DataArray(DOXY, dims=('time'),
+    ds['DOXY'] = xr.DataArray(DOXY, dims=('time_utc'),
         attrs={'units':'umol/kg', 'long_name':'Dissolved Oxygen', 'depth':str('0.5m')})
          
-    ds['pCO2_sw'] = xr.DataArray(pCO2_sw, dims=('time'),
+    ds['pCO2_sw'] = xr.DataArray(pCO2_sw, dims=('time_utc'),
         attrs={'units':'uatm', 'long_name':'seawater pCO2', 'depth':str('<0.5m')})
         
-    ds['pCO2_air'] = xr.DataArray(pCO2_air, dims=('time'),
+    ds['pCO2_air'] = xr.DataArray(pCO2_air, dims=('time_utc'),
         attrs={'units':'uatm', 'long_name':'air pCO2', 'depth':str('0.5-1m')})
         
-    ds['xCO2_air'] = xr.DataArray(xCO2_air, dims=('time'),
+    ds['xCO2_air'] = xr.DataArray(xCO2_air, dims=('time_utc'),
         attrs={'units':'uatm', 'long_name':'air xCO2', 'depth':str('0.5-1m')})   
     
-    ds['pH'] = xr.DataArray(pH, dims=('time'),
-        attrs={'units':' ', 'long_name':'seawater pH', 'depth':str('0.5-1m')})
+    ds['pH'] = xr.DataArray(pH, dims=('time_utc'),
+        attrs={'units':' ', 'long_name':'seawater pH', 'depth':str('0.5m')})
     
-    ds['CHL'] = xr.DataArray(CHL, dims=('time'),
+    ds['CHL'] = xr.DataArray(CHL, dims=('time_utc'),
         attrs={'units':'ug/L', 'long_name':'fluorescence-based nighttime chlorophyll-a', 'depth':str('0.5m')})  
         
-    ds['Turbidity'] = xr.DataArray(NTU, dims=('time'),
+    ds['Turbidity'] = xr.DataArray(NTU, dims=('time_utc'),
         attrs={'units':'NTU', 'long_name':'turbidity', 'depth':str('0.5m')})
 
+    del lat,lon
+        
     if not testing:
-        ds.to_netcdf(out_fn, unlimited_dims='time')
+        ds.to_netcdf(out_fn, unlimited_dims='time_utc')
 
 
 

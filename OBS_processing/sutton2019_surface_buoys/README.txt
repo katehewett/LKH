@@ -8,18 +8,20 @@ This code was created to pull and then process surface data from NOAA data produ
     CCE2 buoy : https://www.pmel.noaa.gov/co2/timeseries/CCE2.txt
     CCE1 buoy : https://www.pmel.noaa.gov/co2/timeseries/CCE1.txt
 
-Extracted 5 buoy datasets. But only 3 are within the LO domain (CHABA, CE, CA)
+Notes:
+	1- Extracted 5 buoy datasets. But only 3 are within the LO domain (CHABA, CE, CA)
+	2- Data sources listed at end, and additional details provided in each text file listed above. 
+	3- Text files are also saved under: /LKH_data/sutton2019_surface_buoys/data_files/
 
-Data sources listed at end, and additional details provided in each text file listed above. 
-
-Text files are also saved under: /LKH_data/sutton2019_surface_buoys/data_files/
-
-To process files, run process_webdata.py which will save files under:
+Flow of scripts:
+process_webdata.py: run to process files, which will read the textfiles and save:
 /LKH_data/sutton2019_surface_buoys/py_files/
 
-**Date of last download: 5 September 2024**
-**Process date 6 September 2024** 
+make_dailyavg.py: run to create daily averages of mooring data and save:
+/LKH_data/sutton2019_surface_buoys/daily/
 
+**Date of last data download: 5 September 2024**
+**Process date 6 September 2024 (again on 11 Sept 2024)** 
 
 ###Variables:
 datetime_utc: Date and time of measurement in UTC (YYYY-MM-DD HH:MM)
