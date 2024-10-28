@@ -1,5 +1,5 @@
 '''
-Run this code first before plotting 
+Run this code first before plotting !!!!! 
 data produced by extract/corrosive_volume
 This code will sum corrosive volumes across the shelf
 mask for OA indicators
@@ -29,6 +29,7 @@ run group_volume_output -gtx cas7_t0_x4b -y0 2013 -y1 2023 -mvar arag05 -group b
 To seperate by Region and grab volumes: 
 run group_volume_output -gtx cas7_t0_x4b -y0 2021 -y1 2021 -mvar arag1 -group byregion -job OA_indicators
 run group_volume_output -gtx cas7_t0_x4b -y0 2013 -y1 2023 -mvar arag1 -group byregion -job OA_indicators
+run group_volume_output -gtx cas7_t0_x4b -y0 2013 -y1 2023 -mvar arag05 -group byregion -job OA_indicators
 
 To run on apogee, will first need to save the mask: 'OA_indicators_shelf_mask_15_200m_noEstuaries.nc'
 under LKH_data, then can run:
@@ -88,7 +89,7 @@ Ldir = Lfun.Lstart(gridname=gridname, tag=tag, ex_name=ex_name)
 for a in argsd.keys():
     if a not in Ldir.keys():
         Ldir[a] = argsd[a]
-        
+       
 Ldir = Lfun.Lstart()
 
 # organize and set paths before summing volumes 
@@ -122,6 +123,8 @@ for ydx in range(0,numyrs):
     mask_rho = ds['mask_rho'].values
     h = ds['h'].values
     DA = ds['DA'].values
+    
+    sys.exit() 
     
     if args.variable == 'arag1':
         var1 = ds['corrosive_int_dz'].values

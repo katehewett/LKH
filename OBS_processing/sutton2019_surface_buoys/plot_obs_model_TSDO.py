@@ -34,7 +34,7 @@ from matplotlib.dates import DateFormatter
 #datapath = 
 mooring_in_dir = '/Users/katehewett/Documents/LKH_data/sutton2019_surface_buoys/py_files'
 model_in_dir = '/Users/katehewett/Documents/LO_output/extract/cas7_t0_x4b/moor/Sutton_etal_2019/'
-out_dir = '/Users/katehewett/Documents/LKH_output/
+out_dir = '/Users/katehewett/Documents/LKH_output/'
 if os.path.exists(mooring_in_dir)==False:
     print('input path for obs data does not exist')
     sys.exit()
