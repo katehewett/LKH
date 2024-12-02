@@ -4,17 +4,14 @@ Based spike code off of
 https://github.com/ooici/ion-functions/tree/master/ion_functions/qc
 
 '''
+from ion_functions.qc.qc_extensions import stuckvalues, spikevalues, gradientvalues, ntp_to_month 
 
-import numpy as np 
-
-def spikevalues(dat, L, N, acc):
-    cdef int dat_shape = dat.shape[0]
-    cdef np.ndarray[double] x = dat
-    cdef np.ndarray[signed char] out = np.zeros([dat_shape], dtype=np.int8)
-    out.fill(1)
-    spike(&out[0], &x[0], dat_shape, L, N, acc)
-
-    return out
+import time
+import numpy as np
+import numexpr as ne
+from scipy.interpolate import LinearNDInterpolator
+from ion_functions import utils
+from ion_functions.utils import fill_value
 
 def dataqc_spiketest_wrapper(dat, acc, N, L, strict_validation=False):
     if is_none(acc) or is_fill(acc) or is_none(N) or is_fill(N) or is_none(L) or is_fill(L):

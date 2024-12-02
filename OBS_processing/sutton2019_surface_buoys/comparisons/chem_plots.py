@@ -149,6 +149,7 @@ for sn in sn_list:
     stop_index = np.argmin(np.abs(ltime-end_time)) 
     LOtime_utc = ltime[start_index:stop_index]  
     LO_SA = LO_ds['SA'].values[start_index:stop_index] 
+    LO_TA = LO_ds['ALK'].values[start_index:stop_index] 
     LO_CT = LO_ds['CT'].values[start_index:stop_index] 
     LO_SIG0 = LO_ds['SIG0'].values[start_index:stop_index] 
     LO_pCO2 = LO_ds['pCO2'].values[start_index:stop_index] 
@@ -193,75 +194,92 @@ for sn in sn_list:
         ax.plot(obs_ds.attrs['lon'],obs_ds.attrs['lat'],color = rcolor,marker = 'o')
         plt.text(obs_ds.attrs['lon'],obs_ds.attrs['lat'],lab,weight='bold',color = rcolor, ha='right', va='center')
     else:
-        ax.plot(obs_ds.attrs['lon'],obs_ds.attrs['lat'],color = 'Navy',marker = 'o')
+        #ax.plot(obs_ds.attrs['lon'],obs_ds.attrs['lat'],color = 'Navy',marker = 'o')
         ax.plot(-124.95,47.97,color = rcolor,marker = 'o')
         plt.text(-124.95,47.97,lab,weight='bold',color = rcolor, ha='left', va='center')
         
-    # SALT     
-    ax0.plot(OBS_SA,LO_SA,color = rcolor, marker='o', alpha=0.2, markeredgecolor ='none', linestyle='none', label = str(sn))
-    ax0.set_ylabel('LO SA ['+str(LO_ds['SA'].units)+']')
+    # TS: plot(x,y) X SALT, Y TEMP!!
+    ax0.plot(OBS_SA,OBS_CT,color = rcolor, marker='o', alpha=0.2, markeredgecolor ='none', linestyle='none', label = str(sn))
+    ax0.plot(LO_SA,LO_CT,color = 'Indigo', marker='o', alpha=0.1, markeredgecolor ='none', linestyle='none', label = str(sn))
+    ax0.set_ylabel('CT ['+str(obs_ds['CT'].units)+']')
     ax0.set_xlabel('SA ['+str(obs_ds['SA'].units)+']')
     
-    smin = 20 #np.floor(np.min(obs_ds['SA']))-2
-    smax = 36 #np.ceil(np.max(obs_ds['SA']))+2
-    yticks = np.arange(smin,smax+1,2)
-    ax0.set_ylim([smin,smax])
-    ax0.set_xlim([smin,smax])
+    xmin = 20 #np.floor(np.min(obs_ds['SA']))-2
+    xmax = 36 #np.ceil(np.max(obs_ds['SA']))+2
+    ymin = 6 #np.floor(np.min(obs_ds['SA']))-2
+    ymax = 20 #np.ceil(np.max(obs_ds['SA']))+2
+    yticks = np.arange(ymin,ymax+1,2)
+    xticks = np.arange(xmin,xmax+1,2)
+    ax0.set_ylim([ymin,ymax])
+    ax0.set_xlim([xmin,xmax])
     ax0.set_yticks(yticks)
-    ax0.set_xticks(yticks)
+    ax0.set_xticks(xticks)
+    ax0.set_title(sn)
     ax0.grid(True)
     
-    # TEMP     
-    ax1.plot(OBS_CT,LO_CT,color = rcolor, marker='o', alpha=0.2, markeredgecolor ='none', linestyle='none')
-    ax1.set_ylabel('LO CT ['+str(LO_ds['CT'].units)+']')
-    ax1.set_xlabel('CT ['+str(obs_ds['CT'].units)+']')
+    # pCO2 - SA : plot(x,y) x SA; y pCO2, !!     
+    ax1.plot(OBS_SA,OBS_pCO2,color = rcolor, marker='o', alpha=0.2, markeredgecolor ='none', linestyle='none')
+    ax1.plot(LO_SA,LO_pCO2,color = 'Indigo', marker='o', alpha=0.1, markeredgecolor ='none', linestyle='none', label = str(sn))
+    ax1.set_xlabel('SA ['+str(obs_ds['SA'].units)+']')
+    ax1.set_ylabel('pCO2 ['+str(obs_ds['pCO2_sw'].units)+']')
 
-    smin = 6 #np.floor(np.min(obs_ds['SA']))-2
-    smax = 20 #np.ceil(np.max(obs_ds['SA']))+2
-    yticks = np.arange(smin,smax+1,2)
-    ax1.set_ylim([smin,smax])
-    ax1.set_xlim([smin,smax])
+    xmin = 20 #np.floor(np.min(obs_ds['SA']))-2
+    xmax = 36 #np.ceil(np.max(obs_ds['SA']))+2
+    ymin = 100 #np.floor(np.min(obs_ds['SIG0']))-1
+    ymax = 1400 #np.ceil(np.max(obs_ds['SIG0']))+1
+    yticks = np.arange(ymin,ymax+200,200) # pCO2
+    xticks = np.arange(xmin,xmax+1,2)     # SALT!! 
+    ax1.set_ylim([ymin,ymax])
+    ax1.set_xlim([xmin,xmax])
     ax1.set_yticks(yticks)
-    ax1.set_xticks(yticks)
+    ax1.set_xticks(xticks)
     ax1.grid(True)
     
-    plt.gcf().tight_layout()
-    
-    # SIG0     
-    ax2.plot(OBS_SIG0,LO_SIG0,color = rcolor, marker='o', alpha=0.2, markeredgecolor ='none', linestyle='none')
-    ax2.set_ylabel('LO SIG0 ['+str(LO_ds['SIG0'].units)+']')
-    ax2.set_xlabel('SIG0 ['+str(obs_ds['SIG0'].units)+']')
+    # y=TA x=SA      plot(x,y)
+    ax2.plot(OBS_SA,LO_TA,color = rcolor, marker='o', alpha=0.2, markeredgecolor ='none', linestyle='none')
+    ax2.plot(LO_SA,LO_TA,color = 'Indigo', marker='o', alpha=0.2, markeredgecolor ='none', linestyle='none')
+    ax2.set_ylabel('TA (LO) [uEq/L]')
+    ax2.set_xlabel('SA ['+str(obs_ds['SIG0'].units)+']')
 
-    smin = 15 #np.floor(np.min(obs_ds['SIG0']))-1
-    smax = 27 #np.ceil(np.max(obs_ds['SIG0']))+1
-    yticks = np.arange(smin,smax+1,2)
-    ax2.set_ylim([smin,smax])
-    ax2.set_xlim([smin,smax])
+    xmin = 20 #np.floor(np.min(obs_ds['SA']))-2
+    xmax = 36 #np.ceil(np.max(obs_ds['SA']))+2
+    ymin = 1800 #TA
+    ymax = 2300 
+    yticks = np.arange(ymin,ymax+100,100)
+    xticks = np.arange(xmin,xmax+1,2)
+    ax2.set_ylim([ymin,ymax])
+    ax2.set_xlim([xmin,xmax])
     ax2.set_yticks(yticks)
-    ax2.set_xticks(yticks)
+    ax2.set_xticks(xticks)
     ax2.grid(True)
     
-    # DO  
+    # y=O2 x=CT      plot(x,y)
     if str(sn) != 'CAPEELIZABETH': 
-        ax3.plot(OBS_DO,LO_DO,color = rcolor, marker='o', alpha=0.2, markeredgecolor ='none', linestyle='none')
-        ax3.set_ylabel('LO DO ['+str(LO_ds['DO (uM)'].units)+']')
-        ax3.set_xlabel('DO ['+str(obs_ds['DO (uM)'].units)+']')
+        ax3.plot(OBS_CT,OBS_DO,color = rcolor, marker='o', alpha=0.2, markeredgecolor ='none', linestyle='none')
+        ax3.plot(LO_CT,LO_DO,color = 'Indigo', marker='o', alpha=0.2, markeredgecolor ='none', linestyle='none')
+        ax3.set_ylabel('DO ['+str(obs_ds['DO (uM)'].units)+']')
+        ax3.set_xlabel('CT ['+str(obs_ds['CT'].units)+']')
 
-        smin = 100 #np.floor(np.min(obs_ds['SIG0']))-1
-        smax = 500 #np.ceil(np.max(obs_ds['SIG0']))+1
-        yticks = np.arange(smin,smax+1,50)
-        ax3.set_ylim([smin,smax])
-        ax3.set_xlim([smin,smax])
+        ymin = 100 #OXYGEN
+        ymax = 500 
+        xmin = 6 #CT
+        xmax = 20 
+        yticks = np.arange(ymin,ymax+1,50)
+        xticks = np.arange(xmin,xmax+1,2)
+        ax3.set_ylim([ymin,ymax])
+        ax3.set_xlim([xmin,xmax])
         ax3.set_yticks(yticks)
-        ax3.set_xticks(yticks)
-        ax3.set_xticklabels(['100', ' ', '200', ' ', '300', ' ', '400', ' ', '500'])
-        ax3.set_yticklabels(['100', ' ', '200', ' ', '300', ' ', '400', ' ', '500'])
+        ax3.set_xticks(xticks)
+        #ax3.set_xticklabels(['100', ' ', '200', ' ', '300', ' ', '400', ' ', '500'])
+        #ax3.set_yticklabels(['100', ' ', '200', ' ', '300', ' ', '400', ' ', '500'])
         ax3.grid(True)
         
         del LO_DO, OBS_DO
 
-    # pCO2     
-    ax4.plot(OBS_pCO2,LO_pCO2,color = rcolor, marker='o', alpha=0.2, markeredgecolor ='none', linestyle='none')
+    plt.gcf().tight_layout()
+    sys.exit()
+    # TA y DIC x   
+    ax4.plot(LO_DIC,LO_TA,color = rcolor, marker='o', alpha=0.2, markeredgecolor ='none', linestyle='none')
     ax4.set_ylabel('LO pCO2_sw ['+str(LO_ds['pCO2'].units)+']')
     ax4.set_xlabel('pCO2_sw ['+str(obs_ds['pCO2_sw'].units)+']')
 

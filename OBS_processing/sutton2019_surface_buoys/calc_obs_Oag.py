@@ -33,7 +33,7 @@ testing = False
 #    'CHABA':'Chaba'
 #}
 
-sn = 'CAPEARAGO'
+sn = 'CHABA'
 
 # output/input locations
 mooring_in_dir = '/Users/katehewett/Documents/LKH_data/sutton2019_surface_buoys/daily'

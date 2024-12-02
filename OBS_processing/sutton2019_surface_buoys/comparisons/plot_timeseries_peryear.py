@@ -1,4 +1,5 @@
 '''
+step 6:
 Plot time-series / year 
 
 '''
@@ -47,7 +48,7 @@ sn_name_dict = {
 '''
 
 sn_name_dict = {
-    'CAPEELIZABETH':'Cape Elizabeth'
+    'CHABA':'Chaba'
 }
 
 sn_list = list(sn_name_dict.keys())

@@ -1,4 +1,5 @@
 '''
+Step 5
 Calc Oag for ...
 * moorning data (pCO2_sw, S, T) using LO TA 
 * LO mooring extractions (TA + TIC, S, T)
@@ -58,7 +59,7 @@ for sn in sn_list:
     print(sn)
     obs_fn = posixpath.join(mooring_in_dir, (sn +'.nc'))
     LO_fn = posixpath.join(model_in_dir, (sn + '_'+str(yYear)+'.01.01_'+str(yYear)+'.12.31.nc'))
-    out_fn = posixpath.join(model_in_dir, fig_nm
+    out_fn = posixpath.join(model_in_dir, fig_nm)
     
     obs_ds = xr.open_dataset(obs_fn, decode_times=True) 
     LO_ds = xr.open_dataset(LO_fn, decode_times=True) 

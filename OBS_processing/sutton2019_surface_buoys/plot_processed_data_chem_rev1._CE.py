@@ -64,6 +64,7 @@ numsites = len(sn_list)
 
 ##CLEAN THIS UPPPP
 
+
 for sn in sn_list:
     
     obs_fn = posixpath.join(obs_in_dir, (sn+'_daily_Oag.nc'))
