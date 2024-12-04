@@ -2,22 +2,13 @@
 # run after toy_extract_data.py
 
 # imports
-from lo_tools import Lfun, zfun
-from lo_tools import plotting_functions as pfun
+from lo_tools import Lfun
 
-import sys
 import os
 import xarray as xr
-import netCDF4 as nc
-from time import time
-import numpy as np
 
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-
-import matplotlib.dates as mdates
-from datetime import datetime
-import pandas as pd
+#import matplotlib.pyplot as plt
+#import matplotlib.dates as mdates
 
 fn_p = '/Users/katehewett/Documents/LKH_output/OOI_data_exploration/testing'
 fn = 'CE02SHSM_RID27_telemetered_ctdbp_cdef_dcl_instrument.nc'
@@ -35,4 +26,5 @@ fs=16
 plt.rc('font', size=fs)
 fig = plt.figure(figsize=(18,10))
 
-ax1.plot(ds.time, SP.values, color='tab:blue', linewidth=2, alpha=0.8)
+ax1.plot(ds.time, SP.values, color='tab:blue', linewidth=2, alpha=0.8) 
+
