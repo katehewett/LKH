@@ -1,5 +1,5 @@
 
-# This README provides a workflow template for accessing OOI data as an LO user.
+# This README provides a workflow template for setting up an ooi-data-explorations repo 
 
 This is a README that helps setup interactions with the ooi data explorations. It also details adding SSH keys to your github, and basic how-tos on forks, git branch and remotes explained. 
 
@@ -227,10 +227,11 @@ Click New SSH key.
 -- In the "Key" field, paste your public key.  
 -- Click Add SSH key.
 
-### 4. Test by trying to fetch upstream again in *"Step 2: Setup directory on local machine and fork the OOI repo"* 
+### 4. Test SSH Key 
 You should now be able to execute git fetch upstream command 
+Test SSH key by trying to fetch upstream again in Step 2: Setup directory on local machine and fork the OOI repo.
 
-## Kate reminder Notes and helpful links (remove when finalize): 
+## Kate's reminder Notes and helpful links (remove when finalize): 
 1. The git fetch command fetches all the changes from the repository. It's a safe command that does not modify your working directory or local branches.  
 2. Use `git status -s` and `git log` or `git diff` to review changes before merging them into your local branches.  
 3. To integrate the fetched changes, use git merge or git rebase. 

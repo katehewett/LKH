@@ -39,7 +39,10 @@ On my laptop clone a copy of the fork:
 # ooi-data-explorations for python 
 ## setup
 Since I have git+miniconda set up and access credentails at OOI, I skipped down to "access credentials"
-If you have a OOI login, and you login here:(https://ooinet.oceanobservatories.org/) [last accessed on June 2023]. On the map you'll see your login email in the upper right hand side of a map. Click it / select user profile and grab your login (API username) and password (API token). Note if you refresh your API token, then you need to also select submit and then close. 
+If you have a OOI login, and you login here:(https://ooinet.oceanobservatories.org/) [last accessed on June 2023]. 
+On the map you'll see your login email in the upper right hand side of a map. 
+Click it / select user profile and grab your login (API username) and password (API token).
+ Note if you refresh your API token, then you need to also select submit and then close. 
 
 My code looks like:
 
@@ -124,11 +127,3 @@ OOI Net node designator
 [**SPKIR**](https://oceanobservatories.org/instrument-series/spkirb/) - SBE - OCR507  
 [**VELPT**](https://oceanobservatories.org/instrument-series/velpta/) - Nortek - Aquadopp  
 [**WAVSS**](https://oceanobservatories.org/instrument-series/wavssa/) - Axys Technologies - TRIAXYS
-
-
-
-
-
-
-
-
