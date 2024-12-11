@@ -82,29 +82,20 @@ for ydx in range(0,numyrs):
     else: 
         df = pd.concat([df,A],axis=0)
 
-# extract month and year
+# extract month and year and then sort 
 df['month'] = df.index.month
 df['year'] = df.index.year
 df3 = df.sort_values(['month','year'])
 
-'''
-    # pack to dataframe so we can take monthly avgs 
-    otime = pd.to_datetime(A['ocean_time'][:,0])    # take all rows in first column = our dates
-    df = pd.DataFrame(A['ARAG'])
-    df['date'] = otime
-    df = df.set_index('date') 
+if args.surf==True: 
+    pn = 'SURF_monthly_means_sorted_Oag_h40m_2013_2023.pkl'
+elif args.bot==True: 
+    pn = 'BOT_monthl_means_sorted_Oag_h40m_2013_2023.pkl'
 
-    df2 = df.resample('ME').mean()
+picklepath = fn_p/pn
 
-    if args.surf==True: 
-        pn = 'SURF_monthly_mean_Oag_h40m_'+str(yr_list[ydx])+'.pkl'
-    elif args.bot==True: 
-        pn = 'BOT_monthly_mean_Oag_h40m_'+str(yr_list[ydx])+'.pkl'
+with open(picklepath, 'wb') as fm:
+    pickle.dump(df3, fm)
+    print('Pickled year %0.0f' % yr_list[ydx])
+    sys.stdout.flush()
 
-    picklepath = fn_o/pn
-
-    with open(picklepath, 'wb') as fm:
-        pickle.dump(df2, fm)
-        print('Pickled year %0.0f' % yr_list[ydx])
-        sys.stdout.flush()
-'''
