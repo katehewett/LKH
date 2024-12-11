@@ -14,11 +14,9 @@ import os
 import sys 
 import argparse
 import pandas as pd
-import numpy as np
 import pandas as pd
 import pickle 
 
-import warnings
 
 # command line arugments
 parser = argparse.ArgumentParser()

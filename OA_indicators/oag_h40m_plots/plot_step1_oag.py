@@ -8,23 +8,16 @@ run plot_step0_oag -surf True < plots surface
 
 """
 # imports
-from lo_tools import Lfun, zfun
+from lo_tools import Lfun
 from lo_tools import plotting_functions as pfun
 
 import os 
 import sys 
 import argparse
 import xarray as xr
-import netCDF4 as nc
-from time import time
-import numpy as np
-import pandas as pd
 import pickle 
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 #import cmocean
-import matplotlib.dates as mdates
-from datetime import datetime
 from matplotlib.colors import BoundaryNorm
 
 # command line arugments

@@ -9,7 +9,10 @@ testing = True
 import sys
 import pprint
 
+# if set up toolbox can add, but for now add paths -- fix so can work on apogee/perigee 
+sys.path.append('/Users/katehewett/Documents/OBS_repos/ooi-data-explorations/python/')
 sys.path.append('/Users/katehewett/Documents/OBS_repos/ooi-data-explorations/python/ooi_data_explorations.common')
+
 # import the functions used to list available information about sites, nodes and sensors ...
 # you could list sites before list_nodes, but we know which sites we want to look at and don't need ALL of the OOI sites
 from ooi_data_explorations.common import list_nodes, list_sensors
@@ -33,7 +36,35 @@ site_list = list(sn_name_dict.keys())
 if testing:
     site = site_list[0]
 
-
 # create a list of nodes available for a particular site
 nodes = list_nodes(site)
-nodes
+print(nodes)
+
+if testing:
+    node = nodes[2]
+
+sensors = list_sensors(site, node)
+print(sensors)
+
+# find where CTD is at 
+if testing:
+    substring = 'CTD'
+    #print(substring)
+    for idx, item in enumerate(sensors):
+        if substring in item:
+            print('The instrument '+substring+' is at idx: '+str(idx))
+            print(sensors[idx])
+            sensor = sensors[idx]
+        else:
+            print(sensors[idx])
+else: print('not testing')
+
+# the steps above are required to create a reference designator that will be used to request data 
+# you can do it manually, but it is worse 
+
+
+
+#idx = sensors.index(target_string)
+    
+    
+
