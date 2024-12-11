@@ -2,6 +2,7 @@
 Plots ~h40m data mask from step0
 across all years with thresholds colored
 
+
 run plot_step0_oag -bot True < plots bottom 
 run plot_step0_oag -surf True < plots surface 
 
@@ -92,7 +93,7 @@ for idx in range(0,2):
     colors=['black'], linewidths=1, linestyles='solid',alpha=0.6)
     ax.contour(xrho,yrho,h, [1000],
     colors=['black'], linewidths=1, linestyles='solid')
-      
+    
     ax.set_title('h40m')
     ax.set_xlabel('Longitude')
     ax.set_ylabel('Latitude')
@@ -103,8 +104,8 @@ for idx in range(0,2):
     ax.grid(False)
 
     pts2 = ax.scatter(xrho*mask_h40m, yrho*mask_h40m, s=1, c = 'mediumseagreen')
+    plt.axhline(y = 48.375, color = 'Purple', linestyle = '-')
 
-#fig1.savefig('/Users/katehewett/Documents/LKH_output/OA_indicators/cas7_t0_x4b/oag_h40m_plots/plot_output/map_NEW.png')
 
 if args.surf==True: 
     axp = plt.subplot2grid((2,3), (0,1), colspan=2) # surface
@@ -112,81 +113,74 @@ elif args.bot==True:
     axp = plt.subplot2grid((2,3), (1,1), colspan=2) # bottom
 
 fig1.tight_layout()
-        
-for ydx in range(0,numyrs): 
-    
-    pn = 'OA_indicators_Oag_h40m_'+str(yr_list[ydx])+'.pkl'
-    if args.surf==True: 
-        picklepath = fn_s/pn
-    elif args.bot==True: 
-        picklepath = fn_b/pn
-    
-    if os.path.isfile(picklepath)==False:
-        print('no file named: ' + pn)
-        sys.exit()
-    
-    # Load the dictionary from the file
-    with open(picklepath, 'rb') as fp3:
-        A = pickle.load(fp3)
-        print('loaded'+str(yr_list[ydx]))
-    
-    y = A['lat_rho']
-    x = A['ocean_time']
-    ARAG = A['ARAG']
 
-    levels = [0, 0.25, 0.5, 1, 1.5, 1.7, 3, 3.5]
-    cmap = plt.get_cmap('RdBu')
-    norm = BoundaryNorm(levels, ncolors=cmap.N, clip=True)
-
-    # Create the pcolormesh plot
-    pcm = axp.pcolormesh(x, y, ARAG, cmap=cmap, norm=norm)
-    #axp.colorbar()
-    #plt.ylim([42.75, 48.75])
-    axp.set_yticks([42.75,43,44,45,46,47,48,48.75])
-    axp.set_yticklabels(['42.75','43','44','45','46','47','48','48.75'])
-        
-    axp.set_xlim(datetime(2013,1,1), datetime(2024,1,1))
-    
-    plt.axvline(x = datetime(2013,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2014,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2015,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2016,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2017,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2018,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2019,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2020,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2021,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2022,1,1), color = 'k', label = 'axvline - full height')
-    plt.axvline(x = datetime(2023,1,1), color = 'k', label = 'axvline - full height')
-    
-    axp.set_xticks([datetime(2013,1,1),datetime(2013,7,1),datetime(2014,1,1), datetime(2014,7,1),
-    datetime(2015,1,1),datetime(2015,7,1),datetime(2016,1,1), datetime(2016,7,1),
-    datetime(2017,1,1),datetime(2017,7,1),datetime(2018,1,1), datetime(2018,7,1),
-    datetime(2019,1,1),datetime(2019,7,1),datetime(2020,1,1),datetime(2020,7,1),
-    datetime(2021,1,1),datetime(2021,7,1),datetime(2022,1,1),datetime(2022,7,1),
-    datetime(2023,1,1),datetime(2023,7,1),datetime(2023,12,31)])
-    
-    axp.set_xticklabels(['Jan13','Jul','Jan14', 'Jul',
-    'Jan15','Jul','Jan16', 'Jul',
-    'Jan17','Jul','Jan18', 'Jul',
-    'Jan19','Jul','Jan20','Jul',
-    'Jan21','Jul','Jan22','Jul',
-    'Jan23','Jul','Jan24'])
-    
-    axp.grid(True)
-
-    if args.surf==True: 
-        axp.set_title('Surface layer \u03A9 ag')
-    elif args.bot==True: 
-        axp.set_title('Bottom layer \u03A9 ag')
-        
-    axp.set_ylabel('Latitude')        
-
-sys.exit()
+# plot the pcolor part         
 if args.surf==True: 
-    fig1.savefig('/Users/katehewett/Documents/LKH_output/OA_indicators/cas7_t0_x4b/oag_h40m_plots/plot_output/Ysurf_map_Oag_NEW.png')
+    pn = 'surf_Oag_h40m_mean_2013_2023.pkl'
+    picklepath = fn_s/pn
 elif args.bot==True: 
-    fig1.savefig('/Users/katehewett/Documents/LKH_output/OA_indicators/cas7_t0_x4b/oag_h40m_plots/plot_output/Ybot_map_Oag_NEW.png')
+    pn = 'bot_Oag_h40m_mean_2013_2023.pkl'
+    picklepath = fn_b/pn
+
+if os.path.isfile(picklepath)==False:
+    print('no file named: ' + pn)
+    sys.exit()
+
+# Load the dictionary from the file
+with open(picklepath, 'rb') as fp3:
+    A = pickle.load(fp3)
+    print('loaded file')
+
+y = A['lat_rho']
+x = A['year_day']
+ARAG = A['mARAG']
+
+levels = [0, 0.25, 0.5, 1, 1.5, 1.7, 3, 3.5]
+cmap = plt.get_cmap('RdBu')
+norm = BoundaryNorm(levels, ncolors=cmap.N, clip=True)
+
+# Create the pcolormesh plot
+pcm = axp.pcolormesh(x, y, ARAG, cmap=cmap, norm=norm)
+#axp.colorbar()
+#plt.ylim([42.75, 48.75])
+axp.set_yticks([42.75,43,44,45,46,47,48,48.75])
+axp.set_yticklabels(['42.75','43','44','45','46','47','48','48.75'])
+    
+axp.set_xlim([1, 365])
+
+plt.axhline(y = 48.75, color = 'k', label = 'axvline - full height')
+
+plt.axvline(x = 1, color = 'k', label = 'axvline - full height')
+plt.axvline(x = 32, color = 'k', label = 'axvline - full height')
+plt.axvline(x = 61, color = 'k', label = 'axvline - full height')
+plt.axvline(x = 92, color = 'k', label = 'axvline - full height')
+plt.axvline(x = 122, color = 'k', label = 'axvline - full height')
+plt.axvline(x = 153, color = 'k', label = 'axvline - full height')
+plt.axvline(x = 183, color = 'k', label = 'axvline - full height')
+plt.axvline(x = 214, color = 'k', label = 'axvline - full height')
+plt.axvline(x = 245, color = 'k', label = 'axvline - full height')
+plt.axvline(x = 275, color = 'k', label = 'axvline - full height')
+plt.axvline(x = 306, color = 'k', label = 'axvline - full height')
+plt.axvline(x = 336, color = 'k', label = 'axvline - full height')
+plt.axvline(x = 365, color = 'k', label = 'axvline - full height')
+
+plt.axhline(y = 48.375, color = 'Purple', linestyle = '-')
+
+axp.set_xticks([1,32,61,92,122,153,183,214,245,275,306,336,365])
+
+axp.grid(True)
+
+if args.surf==True: 
+    axp.set_title('Surface layer \u03A9 ag')
+elif args.bot==True: 
+    axp.set_title('Bottom layer \u03A9 ag')
+    
+axp.set_ylabel('Latitude')        
+
+if args.surf==True: 
+    fig1.savefig('/Users/katehewett/Documents/LKH_output/OA_indicators/cas7_t0_x4b/oag_h40m_plots/plot_output/MEAN_surf_map_Oag_NEW.png')
+elif args.bot==True: 
+    fig1.savefig('/Users/katehewett/Documents/LKH_output/OA_indicators/cas7_t0_x4b/oag_h40m_plots/plot_output/MEAN_bot_map_Oag_NEW.png')
 
 
 

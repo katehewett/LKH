@@ -7,24 +7,17 @@ run step1_calc_mean_oag -surf True < plots surface
 
 """
 # imports
-from lo_tools import Lfun, zfun
-from lo_tools import plotting_functions as pfun
+from lo_tools import Lfun
 
 import os 
 import sys 
 import argparse
-import xarray as xr
-import netCDF4 as nc
-from time import time
+import pandas as pd
 import numpy as np
 import pandas as pd
 import pickle 
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-#import cmocean
-import matplotlib.dates as mdates
-from datetime import datetime
-from matplotlib.colors import BoundaryNorm
+
+import warnings
 
 # command line arugments
 parser = argparse.ArgumentParser()
@@ -42,23 +35,6 @@ if args.surf==True and args.bot==True:
 
 Ldir = Lfun.Lstart()
 
-# organize and set paths before summing volumes 
-#yr_list = [year for year in range(int(args.ys0), int(args.ys1)+1)]
-#numyrs = len(yr_list)
-
-# load the shelf mask / assign vars 
-fn_mask =  Ldir['parent'] / 'LKH_data' / 'shelf_masks' / 'OA_indicators' / 'OA_indicators_shelf_mask_15_200m_noEstuaries.nc'
-dmask = xr.open_dataset(fn_mask) 
-mask_shelf = dmask.mask_shelf 
-h = dmask.h
-xrho = dmask.lon_rho
-yrho = dmask.lat_rho
-
-# load the h mask to flag data between 35<h<45m
-fn_hmask =  Ldir['parent'] / 'LKH_data' / 'shelf_masks' / 'OA_indicators' / 'OA_indicators_h40m_mask.nc'
-hmask = xr.open_dataset(fn_hmask) 
-mask_h40m = hmask.mask_h40m.values    # 0 outside; 1 h=35-45m 
-
 # input location for pickled files 
 fn_i = Ldir['parent'] / 'LKH_output' / 'OA_indicators' / 'cas7_t0_x4b' / 'oag_h40m_plots' 
 
@@ -67,13 +43,21 @@ if args.surf==True:
 elif args.bot==True: 
     fn_b = fn_i / 'bot_h40m'
 
+# name the output file where files will be dumped
+if args.surf==True:
+    fn_o = Ldir['parent'] / 'LKH_output' / 'OA_indicators' / 'cas7_t0_x4b' / 'oag_h40m_plots' / 'surf_h40m' 
+    #Lfun.make_dir(fn_o, clean=False)
+elif args.bot==True:
+    fn_o = Ldir['parent'] / 'LKH_output' / 'OA_indicators' / 'cas7_t0_x4b' / 'oag_h40m_plots' / 'bot_h40m' 
+    #Lfun.make_dir(fn_o, clean=False)
+
 yr_list = [year for year in range(2013,2024)]
 numyrs = len(yr_list)
 
+# super specific to our grid, careful!! 
 NT = 11
 NR = 366
 NC = 941 
-
 amat = np.full([NT,NR,NC],np.nan)
         
 for ydx in range(0,numyrs): 
@@ -94,18 +78,52 @@ for ydx in range(0,numyrs):
         print('loaded'+str(yr_list[ydx]))
 
     # It's packed weird becuase we averaged across the 35-45m depth range (EW)... 
+    # and b/c it's going to help later to have it packed like this
     # np.shape(ARAG) = (365, 941) = each column corresponds to a position unique position N-S; each row a unique yearday 
-    ARAG = A['ARAG']   
-    if np.shape(ARAG)[0] == 365:
-        amat[ydx,0:365,:] = ARAG
-    else: 
-        amat[ydx,:,:] = ARAG
 
-    if ydx == numyrs: 
+    if np.shape(A['ARAG'])[0] == 365:
+        amat[ydx,0:365,:] = A['ARAG']
+    else: 
+        amat[ydx,:,:] = A['ARAG']
         y = A['lat_rho']
         x = A['ocean_time']
 
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", category=RuntimeWarning)
+    m_amat = np.nanmean(amat,axis=0,keepdims=False)
 
+# Create a sample DataFrame, convert to year day and drop the year 
+df = pd.DataFrame({'date': x[:,0]})
+df['date'] = pd.to_datetime(df['date'])
+df['day_of_year'] = df['date'].dt.dayofyear
+df.drop('date', axis=1, inplace=True)
+
+arr = np.expand_dims(np.array(df['day_of_year']),axis=1) 
+arr2 = np.tile(arr,NC)
+
+ARAG = {}
+ARAG['year_day'] = arr2
+ARAG['lat_rho'] = y
+ARAG['mARAG'] = m_amat
+if args.surf == True:
+    ARAG['level'] = 'surf'   
+elif args.bot ==True:
+    ARAG['level'] = 'bot'  
+ARAG['source_file'] = 'data from '+str(fn_i)
+ARAG['calc_region'] = A['calc_region']
+ARAG['date_note'] = 'mean values across 2013 - 2023, year is arbitrary'
+
+if args.surf==True: 
+    pn = 'surf_Oag_h40m_mean_2013_2023.pkl'
+    picklepath = fn_s/pn
+elif args.bot==True: 
+    pn = 'bot_Oag_h40m_mean_2013_2023.pkl'
+    picklepath = fn_b/pn
+
+with open(picklepath, 'wb') as fm:
+    pickle.dump(ARAG, fm)
+    print('Pickled year %0.0f' % yr_list[ydx])
+    sys.stdout.flush()
 
 '''
 if args.surf==True: 
