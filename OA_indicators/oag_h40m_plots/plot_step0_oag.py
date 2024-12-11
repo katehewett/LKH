@@ -2,6 +2,9 @@
 Plots ~h40m data mask from step0
 across all years with thresholds colored
 
+run plot_step0_oag -bot True < plots bottom 
+run plot_step0_oag -surf True < plots surface 
+
 """
 # imports
 from lo_tools import Lfun, zfun
