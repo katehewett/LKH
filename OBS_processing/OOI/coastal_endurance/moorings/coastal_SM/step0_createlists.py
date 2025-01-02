@@ -8,6 +8,7 @@ testing = True
 
 import sys
 import pprint
+import numpy as np
 
 # if set up toolbox can add, but for now add paths -- fix so can work on apogee/perigee 
 sys.path.append('/Users/katehewett/Documents/OBS_repos/ooi-data-explorations/python/')
@@ -61,7 +62,29 @@ else: print('not testing')
 
 # the steps above are required to create a reference designator that will be used to request data 
 # you can do it manually, but it is worse 
+methods = list_methods(site, node, sensor)
+print(methods)
 
+# select the one stream for this data delivery method to use 
+if testing:
+    method = methods[1] 
+    streams = list_streams(site, node, sensor, method)
+
+if testing:
+    stream = list_streams(site, node, sensor,methods[1])
+else:
+    print('pick stream')
+
+# create lists of dictionaries with the available parameters and time ranges covered by each 
+# dataset associated with the sensor
+metadata = list_metadata(site,node,sensor)
+
+parameters = metadata.pop('parameters')
+time_ranges = metadata['times']
+
+for p in parameters:
+    if p['stream'] == stream:
+        pp.pprint(p)
 
 
 #idx = sensors.index(target_string)
