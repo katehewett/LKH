@@ -128,18 +128,21 @@ y = A['lat_rho']
 x = A['year_day']
 ARAG = A['mARAG']
 
-levels = [0.25, 0.5, 0.75, 1,1.25, 1.5, 1.75, 2,2.25, 2.5, 2.75]
+levels = [0.25, 0.5, 1, 1.5, 1.7, 2, 2.5, 3]
 cmap = plt.get_cmap('RdBu')
-cmap.set_under('black')
+cmap.set_extremes(over = 'White',under='Black')
 norm = BoundaryNorm(levels, ncolors=cmap.N, clip=False)
 
 # Create the pcolormesh plot
 pcm = axp.pcolormesh(x, y, ARAG, cmap=cmap, norm=norm)
 #axp.colorbar()
 #plt.ylim([42.75, 48.75])
+cbar = fig1.colorbar(pcm, extend = 'min')
+cbar.set_label('\u03A9 ag')
+
 axp.set_yticks([42.75,43,44,45,46,47,48,48.75])
 axp.set_yticklabels(['42.75','43','44','45','46','47','48','48.75'])
-    
+
 axp.set_xlim([1, 365])
 
 plt.axhline(y = 48.75, color = 'k', label = 'axvline - full height')

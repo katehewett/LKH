@@ -13,6 +13,7 @@ c-axis = random value assigned between 0 - 180 (cmin - cmax)
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+from matplotlib.colors import ListedColormap
 
 '''
 Generate random data which will be used to generate a "stoplight" plot
@@ -51,11 +52,8 @@ del r
 # colorbar things: set your levels and assign a colormap
 # original color bin request was 9, so we're just doing that here. 
 levels = np.linspace(cmin,cmax,numbins+1) 
-cmap_RYB = plt.get_cmap('RdYlBu', numbins)
-cmap_RYG = plt.get_cmap('RdYlGn', numbins)
-
-norm_RYB = mpl.colors.BoundaryNorm(levels, ncolors=cmap_RYB.N, clip=True)
-norm_RYG = mpl.colors.BoundaryNorm(levels, ncolors=cmap_RYG.N, clip=True)
+cmap = ListedColormap(['#7B1910','#E33225','#EF857D','#F9DA78','#FFFFC8','#EDE8C7','#CADFB8','#B1D095','#7B9068'])
+norm = mpl.colors.BoundaryNorm(levels, ncolors=cmap.N, clip=True)
 
 plt.close('all')
 fs=11
@@ -65,30 +63,19 @@ width_of_image = 8
 fig1 = plt.figure(figsize=(height_of_image,width_of_image))
 fig1.set_size_inches(height_of_image,width_of_image, forward=False)
 
-axg = plt.subplot2grid((2,3), (0,1), colspan=2) 
-axb = plt.subplot2grid((2,3), (1,1), colspan=2) 
+ax = plt.subplot2grid((2,3), (0,1), colspan=2) 
 
 # Create the pcolormesh plots (they're the same -- just using diff cmaps)
-pcmg = axg.pcolormesh(YRstack, Rstack, Cstack, edgecolors='Grey', linewidths = 4, cmap=cmap_RYG, norm=norm_RYG)   
-pcmb = axb.pcolormesh(YRstack, Rstack, Cstack, edgecolors='Grey', linewidths = 4, cmap=cmap_RYB, norm=norm_RYB)   
+pcm = ax.pcolormesh(YRstack, Rstack, Cstack, edgecolors='black', linewidths = 4, cmap=cmap, norm=norm)     
 
 # green
-cbar_g = fig1.colorbar(pcmg)
-cbar_g.set_label('RdYlGn')
-axg.set_xticks(yr_list)
-axg.set_yticks([1,2,3,4,5,6])
-axg.set_yticklabels(['R6', 'R5', 'R4', 'R3', 'R2', 'R1'])
+cbar = fig1.colorbar(pcm)
+cbar.set_label('assigned colormap')
+ax.set_xticks(yr_list)
+ax.set_yticks([1,2,3,4,5,6])
+ax.set_yticklabels(['R6', 'R5', 'R4', 'R3', 'R2', 'R1'])
 string_numbers = [str(num) for num in yr_list]
-axg.set_xticklabels(string_numbers)
-axg.set_title('Randomly assigned status with range: ' + str(cmin)+'-'+str(cmax))
-
-# blue
-cbar_b = fig1.colorbar(pcmb)
-cbar_b.set_label('RdYlBu')
-axb.set_xticks(yr_list)
-axb.set_yticks([1,2,3,4,5,6])
-axb.set_yticklabels(['R6', 'R5', 'R4', 'R3', 'R2', 'R1'])
-string_numbers = [str(num) for num in yr_list]
-axb.set_xticklabels(string_numbers)
+ax.set_xticklabels(string_numbers)
+ax.set_title('Randomly assigned status with range: ' + str(cmin)+'-'+str(cmax))
 
 fig1.tight_layout()

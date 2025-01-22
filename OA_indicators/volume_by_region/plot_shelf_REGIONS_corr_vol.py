@@ -5,7 +5,7 @@ but show "good" vol ABOVE 1 for each region
 
 """
 # imports
-from lo_tools import Lfun, zfun
+from lo_tools import Lfun
 from lo_tools import plotting_functions as pfun
 
 import os 

@@ -7,28 +7,20 @@ run plot_step0_oag -surf True < plots surface
 
 """
 # imports
-from lo_tools import Lfun, zfun
+from lo_tools import Lfun
 from lo_tools import plotting_functions as pfun
 
 import os 
 import sys 
 import argparse
 import xarray as xr
-import netCDF4 as nc
-from time import time
-import numpy as np
-import pandas as pd
 import pickle 
 import matplotlib.pyplot as plt
 #import matplotlib.cm as cm
-import cmcrameri.cm as cm
 #import cmocean
-import matplotlib.dates as mdates
 from datetime import datetime
 from matplotlib.colors import BoundaryNorm
-import matplotlib as mpl
 import matplotlib.pyplot as plt
-import matplotlib.colors
 
 # command line arugments
 parser = argparse.ArgumentParser()
@@ -149,13 +141,19 @@ for ydx in range(0,numyrs):
     levels = [0.5, 1, 1.5, 2, 2.5]
     norm = BoundaryNorm(levels, ncolors=cmap.N, clip=False)
     '''
-    levels = [0.25, 0.5, 0.75, 1, 1.5, 1.75, 2, 2.5, 2.75]
+    levels = [0.25, 0.5, 1, 1.5, 1.7, 2, 2.5, 3]
     cmap = plt.get_cmap('RdBu')
-    cmap.set_under('black')
+    cmap.set_extremes(over = 'White',under='Black')
     norm = BoundaryNorm(levels, ncolors=cmap.N, clip=False)
 
     # Create the pcolormesh plot
     pcm = axp.pcolormesh(x, y, ARAG, cmap=cmap, norm=norm)
+    '''
+    if ydx==(numyrs-1):
+        cbar = fig1.colorbar(pcm, extend = 'min')
+        cbar.set_label('\u03A9 ag')
+    '''
+    
     #axp.colorbar()
     #plt.ylim([42.75, 48.75])
     axp.set_yticks([42.75,43,44,45,46,47,48,48.75])

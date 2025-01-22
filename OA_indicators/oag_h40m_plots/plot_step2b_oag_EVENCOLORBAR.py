@@ -172,9 +172,9 @@ x = np.arange(1, NR+1)
 x = np.expand_dims(x,axis=1)
 X = np.tile(x,(1,NC))
 
-levels = [0.25, 0.5, 0.75, 1, 1.5, 1.75, 2, 2.5, 2.75]
+levels = [0.25, 0.5, 1, 1.5, 1.7, 2, 2.5, 3]
 cmap = plt.get_cmap('RdBu')
-cmap.set_under('black')
+cmap.set_extremes(over = 'White',under='Black')
 norm = BoundaryNorm(levels, ncolors=cmap.N, clip=False)
 
 # Create the pcolormesh plot
