@@ -214,7 +214,7 @@ for ydx in range(0,numyrs):
     PHYS['RHO_units'] = 'kg m-3'
     PHYS['calc_region'] = args.job_type + str(': h30m-50m')
 
-    pn = args.job_type+'_Oag_h40m_'+str(yr_list[ydx])+'.pkl'
+    pn = args.job_type+'_rho_h40m_'+str(yr_list[ydx])+'.pkl'
     picklepath = fn_o/pn
         
     with open(picklepath, 'wb') as fm:
