@@ -204,6 +204,7 @@ for ydx in range(0,numyrs):
     PHYS['SA'] = mSA
     PHYS['CT'] = mCT
     PHYS['RHO'] = mrho
+    PHYS['PRES'] = mPres
     if args.surf == True:
         PHYS['level'] = 'surf'   
     elif args.bot ==True:
