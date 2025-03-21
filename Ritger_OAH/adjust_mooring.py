@@ -19,7 +19,7 @@ fn_list = [f for f in listdir(fn_i) if isfile(join(fn_i, f))]
 numfiles = len(fn_list)
 
 fn_o = Ldir['parent'] / 'LKH_output' / 'Ritger_OAH' / 'cas7_t0_x4b' / 'Ritger_sites'
-Lfun.make_dir(fn_o, clean=False)
+Lfun.make_dir(fn_o, clean=True)
 
 # list of vars removing from file
 vn_dlist = ['Pair','Uwind','Vwind','shflux','ssflux','latent','sensible','lwrad','swrad','sustr','svstr','bustr','bvstr','u','v','w','ubar','vbar','AKs','AKv']
@@ -34,6 +34,8 @@ for ydx in range(0,numfiles):
 
     fn_out = fn_o / fn
     ds.to_netcdf(fn_out, unlimited_dims='ocean_time')
+
+    print('saved: ' + fn)
 
 
 
