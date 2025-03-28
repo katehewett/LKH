@@ -3,6 +3,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+# from OOI 
   - python=3.10
   - argcomplete
   - beautifulsoup4
@@ -47,3 +48,37 @@ dependencies:
   - pip:
     - https://bitbucket.org/ooicgsn/pyseas/get/develop.zip
     - https://bitbucket.org/ooicgsn/cgsn-processing/get/master.zip
+  # addons from loenv.yml 
+  # from Rob Hetland 
+  - cf_xarray
+  - cartopy
+  - cmocean
+  - dask-labextension
+  - datashader
+  - geoviews
+  - holoviews
+  - hvplot
+  - jupyter
+  - numba >= 0.49
+  - openpyxl
+  - xgcm
+  - zarr
+  # from Parker MacCready 
+  - UTide
+  - ephem
+  - git 
+  - lxml
+  - seawater
+  - sqlalchemy
+  - pip:
+    - -e ../../../LO/lo_tools/ lo_tools # package of local modules 
+    - azure-storage-blob
+    - PyCO2SYS
+  # from Parker MacCready non-python tools
+  - ffmpeg
+  # my additions
+  - nco #  have to install homebrew and nco before this one
+
+
+  
+

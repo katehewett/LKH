@@ -14,11 +14,13 @@ import xarray as xr
 
 Ldir = Lfun.Lstart()
 
-fn_i = Ldir['parent'] / 'LO_output' / 'extract' / 'cas7_t0_x4b' / 'moor' / 'Ritger_sites'
+#fn_i = Ldir['parent'] / 'LO_output' / 'extract' / 'cas7_t0_x4b' / 'moor' / 'Ritger_sites'
+fn_i = Ldir['parent'] / 'LO_output' / 'extract' / 'cas7_t0_x4b' / 'moor' / 'Ritger_2'
 fn_list = [f for f in listdir(fn_i) if isfile(join(fn_i, f))]
 numfiles = len(fn_list)
 
-fn_o = Ldir['parent'] / 'LKH_output' / 'Ritger_OAH' / 'cas7_t0_x4b' / 'Ritger_sites'
+#fn_o = Ldir['parent'] / 'LKH_output' / 'Ritger_OAH' / 'cas7_t0_x4b' / 'Ritger_sites'
+fn_o = Ldir['parent'] / 'LKH_output' / 'Ritger_OAH' / 'cas7_t0_x4b' / 'Ritger_2'
 Lfun.make_dir(fn_o, clean=True)
 
 # list of vars removing from file
