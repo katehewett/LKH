@@ -16,6 +16,8 @@ fn_o = Ldir['parent'] / 'YOURFOLDERNAME' / 'mixed_layer' / 'extract' / args.gtag
 example call:
 run moor_mixed_layer -gtx cas7_t0_x4b -y0 2017 -job OCNMS_CE_moorings -moor CE042 -plot True 
 
+
+set plot to False to save time 
 '''
 
 import sys
@@ -163,14 +165,7 @@ with open(picklepath, 'wb') as fm:
     pickle.dump(mixed_layer, fm)
     print('mixed layer pickled')
 
-
-
-
-
-
-
 # 4. Plotting - optional 
-# a plot over time 
 if args.mplot == True:
     plt.close('all')
     fs=12
