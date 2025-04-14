@@ -14,6 +14,7 @@ import xarray as xr
 from time import time
 import numpy as np
 import pandas as pd
+import gsw 
 
 import pickle 
 import matplotlib.pyplot as plt
@@ -70,19 +71,73 @@ fn_name = args.mname+'_'+str(thisYR)+'.01.01_'+str(thisYR)+'.12.31'+'.nc'
 fn_in = fn_i / fn_name
 
 m = 'm' + str(thisYR)
-fn_o = fn_i / 'plots' / 'TSOOag' / m
-fno_name = 'CE_transect_TSDO_ARAG_'+str(thisYR)+'.01.01_'+str(thisYR)+'.12.31'+'.png'
+fn_o = Ldir['parent'] / 'LKH_output' / 'WOAC' / 'moor_pannel_plots' / args.gtagex / 'moor' / args.job_type 
+fno_name = args.mname + 'moor_AOU_'+str(thisYR)+'.01.01_'+str(thisYR)+'.12.31'+'.png'
 fn_out = fn_o / fno_name
+Lfun.make_dir(fn_o, clean=False)
 
 ds = xr.open_dataset(fn_in, decode_times=True) 
+NT,NR = np.shape(ds.salt.values)
 
-sys.exit()
+# Calc O2sol 
+ot = pd.to_datetime(ds.ocean_time.values)
+lat = ds.lat_rho.values
+lon = ds.lon_rho.values
+z_rho = ds.z_rho.values 
 
-NT,NR,NC = np.shape(ds.salt.values)
+SP = ds.salt.values          # practical salinity
+SP[SP<0] = 0                 # Make sure salinity is not negative. Could be a problem for pyco2.
+    
+PT = ds.temp.values          # potential temperature [degC] 
 
-Y = ds.z_rho.values
-X = np.tile(ds.lon_rho.values,(NR,1))
+Pres = gsw.p_from_z(z_rho,lat)
 
+SA = gsw.SA_from_SP(SP, Pres, lon, lat) # absolute salinity [g kg-1]
+CT = gsw.CT_from_pt(SA, PT) # conservative temperature [degC]
+rho = gsw.rho(SA, CT, Pres) # in situ density [kg m-3]
+ti = gsw.t_from_CT(SA, CT, Pres) # in situ temperature [degC]
+
+O2sol = gsw.O2sol(SA,CT,Pres,lon,lat)    # umol/kg 
+O2 = ds.oxygen.values 
+AOU = O2sol - O2
+
+NT,NZ = np.shape(ds.salt.values)
+
+Y = z_rho
+ot_na = np.expand_dims(ot,axis=1)
+x = np.tile([ot_na],NZ)
+X = np.squeeze(x)
+del x
+
+plt.close('all')
+fs=11
+plt.rc('font', size=fs)
+height_of_image = 15
+width_of_image = 8
+fig1 = plt.figure(figsize=(height_of_image,width_of_image))
+fig1.set_size_inches(height_of_image,width_of_image, forward=False)
+frac=0.047 * (height_of_image / (width_of_image/13))
+
+smap=cmc.batlow
+
+ax2 = plt.subplot2grid((4,1), (1,0), colspan=1)  # T 
+pcm2 = ax2.pcolormesh(X, Y, AOU, cmap = smap, shading='gouraud',vmin=-120, vmax=320) #, norm=norm)
+cbar_aou = fig1.colorbar(pcm2, ticks=[-120, -60, 0, 60, 120, 180, 240, 300])
+cbar_aou.set_label('AOU')
+
+'''
+ax3 = plt.subplot2grid((4,1), (2,0), colspan=1)  # T 
+pcm3 = ax3.pcolormesh(X, Y, O2sol) #, cmap=smap, shading='gouraud',vmin=7.5, vmax=15) #, norm=norm)
+cbar_aou = fig1.colorbar(pcm3) #, ticks=[7.5,9.5,11.5,13.5,15])
+cbar_aou.set_label('O2sol')
+
+ax1 = plt.subplot2grid((4,1), (0,0), colspan=1)  # T 
+pcm = ax1.pcolormesh(X, Y, O2) #, cmap=smap, shading='gouraud',vmin=7.5, vmax=15) #, norm=norm)
+cbar = fig1.colorbar(pcm, extend = 'both',ticks=[7.5,9.5,11.5,13.5,15])
+cbar.set_label('oxy umol/kg')
+'''
+
+'''
 Tlevels = [7.5,8,8.5,9,9.5,10,10.5,11,11.5] #temp scaled
 Slevels = [25.5,25.75,26,26.25,26.5,26.75,27,27.25,27.5] #sigma dens + temp 
 smap=cmc.batlow.with_extremes(under='grey',over='Crimson')
@@ -201,6 +256,7 @@ for idx in range(0,NT):
 
 
 
+'''
 
 '''
 # 2nd comment is when omit map to make space
