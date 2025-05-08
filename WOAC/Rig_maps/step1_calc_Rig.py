@@ -1,6 +1,4 @@
 '''
-Issue with Rig need to fix (8 May 2025)
-
 This is part of processing required to create Rig plots
 
 Step 1: 
@@ -22,7 +20,7 @@ On personal computer with python open:
 run step1_calc_Rig -gtx cas7_t0_x4b -gtx cas7_t0_x4b -y0 2017 -y1 2017 -job OA_indicators_phys
 
 apogee: 
-python step1_calc_Rig -gtx cas7_t0_x4b -gtx cas7_t0_x4b -y0 2017 -y1 2017 -job OA_indicators_phys &
+python step1_calc_Rig -gtx cas7_t0_x4b -gtx cas7_t0_x4b -y0 2017 -y1 2017 -job OA_indicators_phys > t01.log &
 
 TODO: fix Rig!!!! after looking at velocities from OOI line
 
@@ -102,8 +100,6 @@ ds1 = xr.open_dataset(z_rho_file)
 h = np.expand_dims(ds1.h,axis=0)
 
 f_in =  Ldir['LOo'] / 'extract' / 'cas7_t0_x4b' / 'box' 
-dsb = xr.open_dataset('/Users/katehewett/Documents/LO_output/extract/cas7_t0_x4b/box/OA_indicators_phys_bot_2017.01.01_2017.12.31_chunks/OA_indicators_phys_bot_2017.01.01_2017.12.31.nc', decode_times=True)
-dss = xr.open_dataset('/Users/katehewett/Documents/LO_output/extract/cas7_t0_x4b/box/OA_indicators_phys_surf_2017.01.01_2017.12.31_chunks/OA_indicators_phys_surf_2017.01.01_2017.12.31.nc', decode_times=True)
 
 # run thru loop to load each year's .nc file 
 for ydx in range(0,numyrs): 
