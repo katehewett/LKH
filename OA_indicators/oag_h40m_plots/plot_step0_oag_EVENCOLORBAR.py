@@ -197,7 +197,7 @@ for ydx in range(0,numyrs):
     axp.set_ylabel('Latitude')        
 
 if args.surf==True: 
-    fig1.savefig('/Users/katehewett/Documents/LKH_output/OA_indicators/cas7_t0_x4b/oag_h40m_plots/plot_output/Ysurf_map_Oag_NEW_EVENCOLORBAR.png')
+    'p'+str(NT)'/Users/katehewett/Documents/LKH_output/OA_indicators/cas7_t0_x4b/oag_h40m_plots/plot_output/Ysurf_map_Oag_NEW_EVENCOLORBAR.png')
 elif args.bot==True: 
     fig1.savefig('/Users/katehewett/Documents/LKH_output/OA_indicators/cas7_t0_x4b/oag_h40m_plots/plot_output/Ybot_map_Oag_NEW_EVENCOLORBAR.png')
 

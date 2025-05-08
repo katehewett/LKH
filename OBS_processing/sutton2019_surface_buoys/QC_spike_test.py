@@ -73,7 +73,7 @@ if os.path.exists(in_dir)==False:
 #}
 
 sn_name_dict = {
-   'CAPEARAGO':'Cape Arago'
+   'CHABA':'Chaba'
 } 
 sn_list = list(sn_name_dict.keys())
 
@@ -87,7 +87,7 @@ if str(sn)=='CAPEELIZABETH':
 else: 
     fn_in = posixpath.join(in_dir, (sn +'.nc'))
     
-fn_out = posixpath.join(out_dir, (sn + '_QC_spiketest.nc'))
+fn_out = posixpath.join(out_dir, (sn + '_QC_spiketest_1.5IQR.nc'))
 
 ds = xr.open_dataset(fn_in, decode_times=True)  
 
@@ -167,8 +167,8 @@ for vn in var_list1:
             p25 = rw.quantile(0.25)
             p75 = rw.quantile(0.75)
             iqr = p75 - p25
-            lower_bound = p25 - 4 * iqr
-            upper_bound = p75 + 4 * iqr
+            lower_bound = p25 - 1.5 * iqr
+            upper_bound = p75 + 1.5 * iqr
 
             outliers = (ivar < lower_bound) | (ivar > upper_bound)
             outlier_vals = outliers.astype(int)*ivar

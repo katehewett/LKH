@@ -70,8 +70,8 @@ sn = sn_list[0]
 print(sn)
 
 
-fn_in = posixpath.join(in_dir, (sn + '_QC_spiketest_4IQR.nc'))
-mIQR = 4
+fn_in = posixpath.join(in_dir, (sn + '_QC_spiketest_1.5IQR.nc'))
+mIQR = 1.5
 fn_out = posixpath.join(out_dir, (sn + '_QC_CO2test.nc'))
 
 ds = xr.open_dataset(fn_in, decode_times=True)  

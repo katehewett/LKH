@@ -44,7 +44,10 @@ Notes on QC:
 
 **Questions/clarifications for dataset** 
 (1) We assumed SST and SSS were IT and SP, respectively, but unsure at time of processing. 
-(2) 3-hourly data are provided and were processed and saved. Unsure if {SST, SSS, DOXY, CHL, NTU(mostly empty)} were extracted at timestamps when 3-hourly MAPCO2 were available, or if averages of {vars} were completed across each 3-hour span.
+(2) 3-hourly data are provided and were processed and saved. 
+Unsure if {SST, SSS, DOXY, CHL, NTU(mostly empty)} were extracted at timestamps 
+when 3-hourly MAPCO2 were available, or if averages of {vars} were completed across each 3-hour span.
+There are 3-hourly data and then 30 minute data -- not all the data are 3 hourly. 
 (*) Can re-run processing if assumptions are off on #1; #2 doesn't matter for data processing steps.
 
 ###Obs publication source:

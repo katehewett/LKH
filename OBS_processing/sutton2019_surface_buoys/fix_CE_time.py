@@ -33,7 +33,7 @@ otype = 'moor'
 in_dir = Ldir['parent'] / 'LKH_data' / 'sutton2019_surface_buoys' / 'py_files'
 out_dir = in_dir 
 
-if os.path.exists(out_dir)==False:
+if os.path.exists(out_dir)==True:
     Lfun.make_dir(out_dir, clean = False)
 if os.path.exists(in_dir)==False:
     print('input path does not exist')
