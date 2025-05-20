@@ -28,6 +28,45 @@ import numpy as np
 import pandas as pd 
 import matplotlib.pyplot as plt
 
+'''
+def find_duplicate_indices(df, column_name):
+    """
+    Finds the indices of duplicate elements within a list column of a dataframe.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing the list column.
+        column_name (str): The name of the column containing lists.
+
+    Returns:
+        pd.DataFrame: A DataFrame with two columns: 'original_index' (index of the row in the original DataFrame) and 'duplicate_indices' (list of indices of duplicate elements within the list).
+    """
+    results = []
+    for index, row in df.iterrows():
+        value_counts = {}
+        duplicates = []
+        for i, element in enumerate(row[column_name]):
+            if element in value_counts:
+                duplicates.append(i)
+            else:
+                value_counts[element] = 1
+        if duplicates:
+             results.append({'original_index': index, 'duplicate_indices': duplicates})
+    return pd.DataFrame(results)
+'''
+def find_duplicate_indices(list_):
+    seen = {}
+    duplicates = []
+    for i, item in enumerate(list_):
+        if item in seen:
+            duplicates.append(i)
+        else:
+            seen[item] = True
+    return duplicates
+
+def delete_at_indices(input_list, indices):
+    new_list = [i for j, i in enumerate(input_list) if j not in indices]
+    return new_list
+
 moor = 'CE06ISSM'
 
 ds = xr.open_dataset('/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE06ISSM/velocity/mfd/ooi-ce06issm-mfd35-04-adcptm000_dad4_820b_2d26.nc', decode_times=True)
@@ -53,14 +92,64 @@ df['v'] = ds.northward_sea_water_velocity.values
 df['w'] = ds.upward_sea_water_velocity.values
 df['velprof'] = ds.velprof_evl.values
 
+print('grouping by day...')
+
 Zgroup = df.groupby('datetimes')['z'].apply(list).reset_index(name='z')  
 Ugroup = df.groupby('datetimes')['u'].apply(list).reset_index(name='u')
 Vgroup = df.groupby('datetimes')['v'].apply(list).reset_index(name='v')
 Wgroup = df.groupby('datetimes')['w'].apply(list).reset_index(name='w')
+Egroup = df.groupby('datetimes')['velprof'].apply(list).reset_index(name='velprof')
+
+print('identifying duplicates in z ...')
+# remove duplicates and grab indicies
+#duplicate_indices = find_duplicate_indices(Zgroup, 'z')
+
+Zgroup_copy = Zgroup.copy()
+Zgroup_copy['dup_ind']=Zgroup_copy['z'].apply(find_duplicate_indices)
+Zgroup_copy['has_duplicates'] = Zgroup_copy['dup_ind'].apply(lambda x: len(x) > 0)
+
+print('removing duplicates in z ...')
+Zgroup_copy['new_value'] = Zgroup_copy.apply(lambda row: np.array(row['z'])[row['dup_ind']] if row['has_duplicates'] else np.array(row['z']), axis=1)
+
+print('removing duplicates in u ...')
+Ugroup_copy = Ugroup.copy()
+Ugroup_copy['dup_ind']=Zgroup_copy['dup_ind'].copy()
+Ugroup_copy['has_duplicates'] = Zgroup_copy['has_duplicates'].copy()
+Ugroup_copy['new_value'] = Ugroup_copy.apply(lambda row: np.array(row['u'])[row['dup_ind']] if row['has_duplicates'] else np.array(row['u']), axis=1)
+
+print('removing duplicates in v ...')
+Vgroup_copy = Vgroup.copy()
+Vgroup_copy['dup_ind']=Zgroup_copy['dup_ind'].copy()
+Vgroup_copy['has_duplicates'] = Zgroup_copy['has_duplicates'].copy()
+Vgroup_copy['new_value'] = Vgroup_copy.apply(lambda row: np.array(row['v'])[row['dup_ind']] if row['has_duplicates'] else np.array(row['v']), axis=1)
+
+print('removing duplicates in w ...')
+Wgroup_copy = Wgroup.copy()
+Wgroup_copy['dup_ind']=Zgroup_copy['dup_ind'].copy()
+Wgroup_copy['has_duplicates'] = Zgroup_copy['has_duplicates'].copy()
+Wgroup_copy['new_value'] = Wgroup_copy.apply(lambda row: np.array(row['w'])[row['dup_ind']] if row['has_duplicates'] else np.array(row['w']), axis=1)
+
+print('removing duplicates in velprof ...')
+Egroup_copy = Egroup.copy()
+Egroup_copy['dup_ind']=Zgroup_copy['dup_ind'].copy()
+Egroup_copy['has_duplicates'] = Zgroup_copy['has_duplicates'].copy()
+Egroup_copy['new_value'] = Egroup_copy.apply(lambda row: np.array(row['velprof'])[row['dup_ind']] if row['has_duplicates'] else np.array(row['velprof']), axis=1)
+
+#duplicate_indices['Zdups'] = Zgroup[duplicate_indices['original_index']]
+
+#Zgroup_copy['has_duplicates'] = Zgroup_copy['z']
+
+sys.exit()
+
+Ugroup = df.groupby('datetimes')['u'].apply(list).reset_index(name='u')
+Vgroup = df.groupby('datetimes')['v'].apply(list).reset_index(name='v')
+Wgroup = df.groupby('datetimes')['w'].apply(list).reset_index(name='w')
+
+sys.exit()
 
 # there are duplicate entries on Timestamp('2023-01-15 12:00:00')
 # fixing by hand 
-Zgroup['z'][198254] = np.array([-28.0,
+Zgroup['z'][198254] = [-28.0,
  -27.0,
  -26.0,
  -25.0,
@@ -89,9 +178,9 @@ Zgroup['z'][198254] = np.array([-28.0,
  -2.0,
  -1.0,
  -0.0,
- 1.0])
+ 1.0]
 
-Ugroup['u'][198254] = np.array([-0.012618391891911426,
+Ugroup['u'][198254] = [-0.012618391891911426,
  -0.013389326875534834,
  -0.007981788243742972,
  -0.019260319764142025,
@@ -121,7 +210,7 @@ Ugroup['u'][198254] = np.array([-0.012618391891911426,
  -0.22571354911154504,
  -0.40466563104317343,
  -0.5037125689123003
-])
+]
 
 Vgroup['v'][198254] = [0.08096157228007708,
  0.07806232078166829,
@@ -188,7 +277,7 @@ Wgroup['w'][198254] =[-0.002,
 #Zgroup['ZU'] = [zu] * len(Zgroup)
 
 zdict = {}
-zdict['z'] = Zgroup['z']
+zdict = Zgroup['z'] 
 
 # id where the z's are in the full bin range, zu
 zbool = np.ones([NZ,NT])*np.nan
@@ -196,6 +285,12 @@ zb = np.ones([NZ,NT])*np.nan
 ub = np.ones([NZ,NT])*np.nan
 vb = np.ones([NZ,NT])*np.nan
 wb = np.ones([NZ,NT])*np.nan
+
+for i in range(NT):
+    ind = np.isin(zu,zdict[i])
+    zbool[:,i] = ind
+
+    zb[np.where(zbool[:,i]),i] = Zgroup['z'][i]
 
 for i in range(NT):
     ind = np.isin(zu,zdict['z'][i])

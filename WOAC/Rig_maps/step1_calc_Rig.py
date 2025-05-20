@@ -19,8 +19,15 @@ Examples of how to call the script:
 On personal computer with python open:
 run step1_calc_Rig -gtx cas7_t0_x4b -gtx cas7_t0_x4b -y0 2017 -y1 2017 -job OA_indicators_phys
 
+Time to calc del. velocity = 14.20 sec
+Time to calc rho and Rig = 9.19 sec
+
 apogee: 
 python step1_calc_Rig -gtx cas7_t0_x4b -gtx cas7_t0_x4b -y0 2017 -y1 2017 -job OA_indicators_phys > t01.log &
+
+working on 2017 setup...
+Time to calc del. velocity = 54.51 sec
+Time to calc rho and Rig = 47.60 sec
 
 TODO: fix Rig!!!! after looking at velocities from OOI line
 
