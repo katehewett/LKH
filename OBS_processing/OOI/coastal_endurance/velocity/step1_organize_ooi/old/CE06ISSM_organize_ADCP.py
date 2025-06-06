@@ -1,13 +1,15 @@
 '''
 First step for CE06ISSM
-CE06ISSM_organize_VEL3D.py
+CE06ISSM_organize_ADCPs.py
 
 This code is to process data from OOI for the WA surface mooring velocity data.
 
 The ADCP data has already been binned by OOI/Axiom and is provides u,v,w (and error, see README)
 
+CE06ISSM has 3495 w/c sets of duplicate values 
+
 '/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE06ISSM/velocity/mfd'
-ooi-ce06issm-mfd35-01-vel3dd000_21b5_1859_99b7.nc  
+ooi-ce06issm-mfd35-01-vel3dd000_21b5_1859_99b7.nc  ooi-ce06issm-mfd35-04-adcptm000_dad4_820b_2d26.nc
 '''
 
 import sys
@@ -33,7 +35,7 @@ def find_duplicate_indices(list_):
 
 moor = 'CE06ISSM'
 
-ds = xr.open_dataset('/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE06ISSM/velocity/mfd/ooi-ce06issm-mfd35-01-vel3dd000_21b5_1859_99b7.nc', decode_times=True)
+ds = xr.open_dataset('/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE06ISSM/velocity/mfd/ooi-ce06issm-mfd35-04-adcptm000_dad4_820b_2d26.nc', decode_times=True)
 
 fn_o = '/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE06ISSM/velocity/mfd'
 if os.path.exists(fn_o)==False:
@@ -41,7 +43,7 @@ if os.path.exists(fn_o)==False:
 
 zu = np.unique(ds.z.values)
 ot = np.unique(ds.time.values)
-NT = np.shape(ot)[0] 
+NT = np.shape(ot)[0]
 NZ = np.shape(zu)[0]
 
 print('unique z, NZ: '+ str(NZ))
@@ -59,34 +61,109 @@ df['z'] = ds.z.values
 df['u'] = ds.eastward_sea_water_velocity.values
 df['v'] = ds.northward_sea_water_velocity.values
 df['w'] = ds.upward_sea_water_velocity.values
-#df['velprof'] = ds.velprof_evl.values
+df['velprof'] = ds.velprof_evl.values
+
+print('grouping by day...')
+
+#############################################################################################################
+# group by timestamps 
+Zgroup = df.groupby('datetimes')['z'].apply(list).reset_index(name='z')  
+Ugroup = df.groupby('datetimes')['u'].apply(list).reset_index(name='u')
+Vgroup = df.groupby('datetimes')['v'].apply(list).reset_index(name='v')
+Wgroup = df.groupby('datetimes')['w'].apply(list).reset_index(name='w')
+Egroup = df.groupby('datetimes')['velprof'].apply(list).reset_index(name='velprof')
 
 # check timestamps for duplicate entries
-duplicates = df.duplicated(subset='datetimes')
+duplicates = Zgroup.duplicated(subset='datetimes')
 if np.all(~duplicates):
     print('no duplicates in timestamp')
 
+#############################################################################################################
+# We know there are a lot of instances where velocities thru the water column
+# are repeated for one timestamp. The next several lines of code will:
+# 1 - remove duplicates, and 2 - grab indicies of duplicates
+# This isn't super fast, TODO: find a way to speed up the search. But also unique to this mooring, so okay.
+print('identifying duplicates in z ...')
+
+Zgroup_copy = Zgroup.copy()
+Zgroup_copy['dup_ind']=Zgroup_copy['z'].apply(find_duplicate_indices)
+Zgroup_copy['has_duplicates'] = Zgroup_copy['dup_ind'].apply(lambda x: len(x) > 0)
+
+print('removing duplicates in z ...')
+Zgroup_copy['new_value'] = Zgroup_copy.apply(lambda row: np.array(row['z'])[row['dup_ind']] if row['has_duplicates'] else np.array(row['z']), axis=1)
+
+print('removing duplicates in u ...')
+Ugroup_copy = Ugroup.copy()
+Ugroup_copy['dup_ind']=Zgroup_copy['dup_ind'].copy()
+Ugroup_copy['has_duplicates'] = Zgroup_copy['has_duplicates'].copy()
+Ugroup_copy['new_value'] = Ugroup_copy.apply(lambda row: np.array(row['u'])[row['dup_ind']] if row['has_duplicates'] else np.array(row['u']), axis=1)
+
+print('removing duplicates in v ...')
+Vgroup_copy = Vgroup.copy()
+Vgroup_copy['dup_ind']=Zgroup_copy['dup_ind'].copy()
+Vgroup_copy['has_duplicates'] = Zgroup_copy['has_duplicates'].copy()
+Vgroup_copy['new_value'] = Vgroup_copy.apply(lambda row: np.array(row['v'])[row['dup_ind']] if row['has_duplicates'] else np.array(row['v']), axis=1)
+
+print('removing duplicates in w ...')
+Wgroup_copy = Wgroup.copy()
+Wgroup_copy['dup_ind']=Zgroup_copy['dup_ind'].copy()
+Wgroup_copy['has_duplicates'] = Zgroup_copy['has_duplicates'].copy()
+Wgroup_copy['new_value'] = Wgroup_copy.apply(lambda row: np.array(row['w'])[row['dup_ind']] if row['has_duplicates'] else np.array(row['w']), axis=1)
+
+print('removing duplicates in velprof ...')
+Egroup_copy = Egroup.copy()
+Egroup_copy['dup_ind']=Zgroup_copy['dup_ind'].copy()
+Egroup_copy['has_duplicates'] = Zgroup_copy['has_duplicates'].copy()
+Egroup_copy['new_value'] = Egroup_copy.apply(lambda row: np.array(row['velprof'])[row['dup_ind']] if row['has_duplicates'] else np.array(row['velprof']), axis=1)
+
+print('gridding data ...')
 #####################################################################
+# Organize arrays s/t they are ready to be placed in a gridded format 
+Zgroup_copy['zu_bool'] = Zgroup_copy.apply(lambda row: np.isin(zu,row['new_value']), axis=1)
+Zgroup_copy['zu_idx'] = Zgroup_copy.apply(lambda row: np.where(row['zu_bool']), axis=1)
+
+# id where the z's are in the full bin range, zu
+zbool = np.ones([NZ,NT])*np.nan
+zb = np.ones([NZ,NT])*np.nan
+ub = np.ones([NZ,NT])*np.nan
+vb = np.ones([NZ,NT])*np.nan
+wb = np.ones([NZ,NT])*np.nan
+eb = np.ones([NZ,NT])*np.nan
+
+for i in range(NT):
+    zbool[:,i] = Zgroup_copy['zu_bool'][i]
+
+    zb[Zgroup_copy['zu_idx'][i],i] = Zgroup_copy['new_value'][i]
+    ub[Zgroup_copy['zu_idx'][i],i] = Ugroup_copy['new_value'][i]
+    vb[Zgroup_copy['zu_idx'][i],i] = Vgroup_copy['new_value'][i]
+    wb[Zgroup_copy['zu_idx'][i],i] = Wgroup_copy['new_value'][i]
+    eb[Zgroup_copy['zu_idx'][i],i] = Egroup_copy['new_value'][i]
+
 print('putting to ds...')
 
-VEL3D = xr.Dataset()
-VEL3D['ocean_time'] = (('ocean_time'), ot, {'long_name':'times from OOI, input as from 01-JAN-1970 00:00'})
+ADCP = xr.Dataset()
+if np.all(Zgroup_copy['datetimes'].values==ot):
+    ADCP['ocean_time'] = (('ocean_time'), ot, {'long_name':'times from OOI, input as from 01-JAN-1970 00:00'})
+else: 
+    print('exited script; werid time errors')
+    sys.exit()
 
-VEL3D['u'] = (('ocean_time'), df['u'], {'units':'m.s-1', 'long_name': 'OOI Eastward Sea Water Velocity','positive':'eastward',
+ADCP['z'] = (('z'), zu, {'units':'m', 'long_name':'altitude from OOI', 'positive':'up'})
+
+ADCP['zbool'] = (('z','ocean_time'), zbool, {'units':'bool', 'long_name': '0 = no data; 1 = data'})
+ADCP['u'] = (('z','ocean_time'), ub, {'units':'m.s-1', 'long_name': 'OOI Eastward Sea Water Velocity','positive':'eastward',
                                       'metadata link':'https://mmisw.org/ont/cf/parameter/eastward_sea_water_velocity'})
-VEL3D['v'] = (('ocean_time'), df['v'], {'units':'m.s-1', 'long_name': 'OOI Northward Sea Water Velocity','positive':'northward',
+ADCP['v'] = (('z','ocean_time'), vb, {'units':'m.s-1', 'long_name': 'OOI Northward Sea Water Velocity','positive':'northward',
                                       'metadata link':'http://mmisw.org/ont/cf/parameter/northward_sea_water_velocity'})
-VEL3D['w'] = (('ocean_time'), df['w'], {'units':'m.s-1', 'long_name': 'Upward Sea Water Velocity','positive':'upward',
+ADCP['w'] = (('z','ocean_time'), wb, {'units':'m.s-1', 'long_name': 'Upward Sea Water Velocity','positive':'upward',
                                       'metadata link':'http://mmisw.org/ont/cf/parameter/upward_sea_water_velocity'})
+ADCP['velprof'] = (('z','ocean_time'), eb, {'units':'m.s-1', 'long_name': 'Error Seawater Velocity detail link broken','positive':'unclear',
+                                      'metadata link':'BROKEN: https://mmisw.org/ont/cf/parameter/VELPROF-EVL'})
 
-VEL3D['moored_location'] = 'mfd ~ 29m'
-
-fn = fn_o + '/' + str(moor) + '_mfd_VEL3D.nc'
-VEL3D.to_netcdf(fn, unlimited_dims='ocean_time')
+fn = fn_o + '/' + str(moor) + '_mfd_ADCP.nc'
+ADCP.to_netcdf(fn, unlimited_dims='ocean_time')
 
 print('saved!')
-
-sys.exit()
 
 '''
 plt.plot(zb[:,19458],ub[:,19458])

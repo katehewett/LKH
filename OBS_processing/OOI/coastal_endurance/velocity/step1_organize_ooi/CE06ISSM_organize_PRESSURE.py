@@ -1,8 +1,15 @@
 '''
 First step for CE06ISSM
-CE06ISSM_organize_VEL3D.py
+CE06ISSM_organize_PRESSURE.py
 
-This code is to process data from OOI for the WA surface mooring velocity data.
+This code is to process data from OOI for the WA surface mooring pressure data
+from the mfd 
+In support of velocity processing
+
+'/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE06ISSM/velocity/mfd'
+Pmfn = xr.open_dataset('/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE06ISSM/pressure/mfd/ooi-ce06issm-mfd37-03-ctdbpc000_5d2b_5c05_8b78.nc', decode_times=True)
+Pseafloor = xr.open_dataset('/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE06ISSM/pressure/mfd/ooi-ce06issm-mfd35-02-presfa000_2d0a_0cb6_f73c.nc', decode_times=True)
+
 
 '''
 
@@ -28,19 +35,17 @@ def find_duplicate_indices(list_):
 #############################################################
 
 moor = 'CE06ISSM'
-#loco = 'surfacebuoy'
-loco = 'nsif'
+loco = 'mfd'
+#loco = 'nsif'
 
-if loco == 'nsif':
-    ds = xr.open_dataset('/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE06ISSM/velocity/nsif/ooi-ce06issm-rid16-04-velpta000_21b5_1859_99b7.nc', decode_times=True)
-    out_dir = '/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE06ISSM/velocity/nsif'
-elif loco == 'surfacebuoy':
-    ds = xr.open_dataset('/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE06ISSM/velocity/surfacebuoy/ooi-ce06issm-sbd17-04-velpta000_21b5_1859_99b7.nc', decode_times=True)
-    out_dir = '/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE06ISSM/velocity/surfacebuoy'
+Pmfn = xr.open_dataset('/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE06ISSM/pressure/mfd/ooi-ce06issm-mfd37-03-ctdbpc000_5d2b_5c05_8b78.nc', decode_times=True)
+Pseafloor = xr.open_dataset('/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE06ISSM/pressure/mfd/ooi-ce06issm-mfd35-02-presfa000_2d0a_0cb6_f73c.nc', decode_times=True)
+fn_o = '/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE06ISSM/pressure/mfd'
 
-if os.path.exists(out_dir)==False:
+if os.path.exists(fn_o)==False:
     Lfun.make_dir(out_dir, clean = False)
 
+sys.exit()
 zu = np.unique(ds.z.values)
 ot = np.unique(ds.time.values)
 NT = np.shape(ot)[0]
@@ -82,16 +87,13 @@ VELPTA['w'] = (('ocean_time'), df['w'], {'units':'m.s-1', 'long_name': 'Upward S
                                       'metadata link':'http://mmisw.org/ont/cf/parameter/upward_sea_water_velocity'})
 
 if loco == 'nsif':
-    VELPTA['u'].attrs['moored_location'] = 'nsif ~7m below surface'
-    VELPTA['v'].attrs['moored_location'] = 'nsif ~7m below surface'
-    VELPTA['w'].attrs['moored_location'] = 'nsif ~7m below surface'
+    VELPTA['moored_location'] = 'nsif ~7m below surface'
     fn = fn_o + '/' + str(moor) + '_nsif_VELPTA.nc'
 elif loco == 'surfacebuoy':
-    VELPTA['u'].attrs['moored_location'] = 'surface buoy ~1m below surface'
-    VELPTA['v'].attrs['moored_location'] = 'surface buoy ~1m below surface'
-    VELPTA['w'].attrs['moored_location'] = 'surface buoy ~1m below surface'
+    VELPTA['moored_location'] = 'surface buoy ~1m below surface'
     fn = fn_o + '/' + str(moor) + '_surfacebuoy_VELPTA.nc'
 
+sys.exit()
 VELPTA.to_netcdf(fn, unlimited_dims='ocean_time')
 
 print('saved!')

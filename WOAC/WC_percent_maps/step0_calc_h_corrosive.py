@@ -1,18 +1,15 @@
 '''
 Run this code first before plotting !!!!! 
 data produced by extract/corrosive_volume
-This code will sum corrosive volumes across the shelf
+This code will calc decimal percent corrosive height across the shelf
 mask for OA indicators
-
-Right now this code produces 1 pickled file per year  
-that will save time with a corrosive volume and a cumulative 
-corrosive volume for the OA_indicators shelf
-then does that again for Oregon / Washington 
-(we used 46.25N ~mouth of the CR as a divider, near Cape Dissapointment WA)
 
 !! code assumes extracted full years were saved XXXX.01.01 - XXXX.12.31 !! 
 
 Examples of how to call the script:
+run step0_calc_h_corrosive.py -gtx cas7_t0_x4b -y0 2013 -y1 2023 -mvar arag05 -group shelf -job OA_indicators
+
+
 On personal computer with python open:
 To grab all of the shelf for the OA_indicators job list:
 run group_volume_output -gtx cas7_t0_x4b -y0 2021 -y1 2021 -mvar arag1 -group shelf -job OA_indicators
@@ -29,6 +26,8 @@ run group_volume_output -gtx cas7_t0_x4b -y0 2013 -y1 2023 -mvar arag05 -group b
 To seperate by Region and grab volumes: 
 run group_volume_output -gtx cas7_t0_x4b -y0 2021 -y1 2021 -mvar arag1 -group byregion -job OA_indicators
 run group_volume_output -gtx cas7_t0_x4b -y0 2013 -y1 2023 -mvar arag1 -group byregion -job OA_indicators
+run group_volume_output -gtx cas7_t0_x4b -y0 2013 -y1 2023 -mvar arag05 -group byregion -job OA_indicators
+
 run group_volume_output -gtx cas7_t0_x4b -y0 2013 -y1 2023 -mvar arag05 -group byregion -job OA_indicators
 
 To run on apogee, will first need to save the mask: 'OA_indicators_shelf_mask_15_200m_noEstuaries.nc'
@@ -103,7 +102,7 @@ mask_shelf = dmask.mask_shelf
 #del dmask
 
 # name the output file where files will be dumped
-fn_o = Ldir['parent'] / 'LKH_output' / 'OA_indicators' / args.gtagex / 'volumes_by_threshold' / args.group / args.variable
+fn_o = Ldir['parent'] / 'LKH_output' / 'WOAC' / args.gtagex / 'corrosive_WC_by_threshold' / args.group / args.variable
 Lfun.make_dir(fn_o, clean=False)
 
 for ydx in range(0,numyrs): 
@@ -124,9 +123,9 @@ for ydx in range(0,numyrs):
     h = ds['h'].values
     DA = ds['DA'].values
     
-    
     sys.exit() 
-    
+    sys.exit() 
+
     if args.variable == 'arag1':
         var1 = ds['corrosive_int_dz'].values
         threshold = 1

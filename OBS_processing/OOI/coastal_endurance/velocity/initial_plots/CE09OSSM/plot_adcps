@@ -61,7 +61,7 @@ Z = ds_up.z.values
 u = ds_up.eastward_sea_water_velocity.values
 ot = ds_up.time.values
 
-pcm0 = ax0.scatter(ot, Z, u, cmap = smap) #, shading='gouraud') #,vmin=-120, vmax=320)
+pcm0 = ax0.scatter(ot, Z, u) #, cmap = smap) #, shading='gouraud') #,vmin=-120, vmax=320)
 
 
 # downward ADCP 
