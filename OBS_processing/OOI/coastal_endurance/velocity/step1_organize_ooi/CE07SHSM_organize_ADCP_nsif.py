@@ -24,6 +24,7 @@ import pandas as pd
 import posixpath 
 from datetime import datetime
 from scipy import stats
+from scipy import interpolate
 import warnings
 
 import matplotlib.pyplot as plt
@@ -44,6 +45,7 @@ def find_duplicate_indices(list_):
         else:
             seen[item] = True
     return duplicates
+###############################################################################################################################
 ###############################################################################################################################
 
 error_threshold = 0.1
@@ -77,6 +79,7 @@ print('length z: ' + str(np.shape(ds.z.values)[0]))
 print('length time: ' + str(np.shape(ds.time.values)[0]))
 
 ###############################################################################################################################
+###############################################################################################################################
 # OOI download provides data in a long 1D array 
 df = pd.DataFrame({'datetimes':ds.time.values})
 df['date'] = df['datetimes'].dt.date
@@ -85,63 +88,84 @@ df['z'] = ds.z.values
 df['u'] = ds.eastward_sea_water_velocity.values
 df['v'] = ds.northward_sea_water_velocity.values
 df['w'] = ds.upward_sea_water_velocity.values
-df['velprof'] = ds.velprof_evl.values
+df['e'] = ds.velprof_evl.values
 
+#################################################################################################
 # set vars to nan if > error threshold 
-df['Econdition'] = abs(df['velprof']) > error_threshold 
+print('filtering error terms')
+df['Econdition'] = abs(df['e']) > error_threshold 
 df.loc[df['Econdition'],'u'] = np.nan # take all the u rows where Econdition == True and set to nan
 df.loc[df['Econdition'],'v'] = np.nan
 df.loc[df['Econdition'],'w'] = np.nan # error is for u,v, but flagging w. not sure what's best here...
-df.loc[df['Econdition'],'velprof'] = np.nan
+df.loc[df['Econdition'],'e'] = np.nan
 
-# weird OOI flags had a few timestamps with entire WC shifted upwards. N=631. Remove them here:
-# This also removed the duplicates in zgroup for CE07SHSM nsif
-df.drop(df.loc[df['z']>-6].index,inplace=True)
+#################################################################################################
+# Want to drop some data here to make the arrays smaller:
+# (1) weird OOI flags had a few timestamps with entire WC was shifted upwards. 
+# clipping everything above -6m would remove those values here (rows dropped = 631) 
+# That clip (-6m) also removed the duplicate zgroups per timestamp for CE07SHSM nsif
+# (2) Since we're later going to clip at a surfacemost (and bottommost) binedge(s),
+# we skipped a step and jumped to clip below -7.5m (instead of -6m) binedges[-1] and 
+# -57.5m,binedges[0], which removes the deep (below -89m bins) present early in the timeseries
+Zcenter = np.arange(-55,-9,5)  # originally went to 
+binedges = Zcenter-2.5
+binedges = np.append(binedges,binedges[-1]+5)
 
-######################################################################################################
-'''
-# check the data and a lot to see about the error term, there isn't a value calc'd for 2015 
-Zcenter = np.arange(-90,0,1)
-binedges = Zcenter-0.5
-binedges = np.append(binedges,binedges[-1]+1)
+df.drop(df.loc[df['z']>binedges[-1]].index,inplace=True)
+df.drop(df.loc[df['z']<binedges[0]].index,inplace=True)
 
-#statistic, bin_edges, binnumber = stats.binned_statistic(x, values, statistic='mean', bins=bins)
-#x the data to be binned; values the values on which the statistic will be computed 
-# values must have the same shape as x or be a list of arrays with the same shape as x)
-# x = [1, 1, 2, 5, 7] # values = [[1.0, 1.0, 2.0, 1.5, 3.0], [2.0, 2.0, 4.0, 3.0, 6.0]]
-# bins = [1, 4, 7] # statistic >> array([[1.33333333, 2.25],[2.66666667, 4.5]])
-Emean, bin_edges, binnumber = stats.binned_statistic(df['z'], df['velprof'], statistic=np.nanmean, bins=binedges)
-Estd, bin_edges, binnumber = stats.binned_statistic(df['z'], df['velprof'], statistic=np.nanstd, bins=binedges)
+df = df.reset_index() # reset index after drops
 
-plt.close('all')
-fs=14
-plt.rc('font', size=fs)
-fig = plt.figure(figsize=(18,10))
-fig.set_size_inches(18,10, forward=False)
+# Calc U outliers 
+print('calc u outliers...')
+Umean, bin_edges, binnumber = stats.binned_statistic(df['z'], df['u'], statistic=np.nanmean, bins=binedges)
+Ustd, bin_edges, binnumber = stats.binned_statistic(df['z'], df['u'], statistic=np.nanstd, bins=binedges)
+uhigh = Umean+7*Ustd
+ulow = Umean-7*Ustd
+# adjust bin numbers to python 0 = 1st and assign uhigh and ulows
+Ubin = binnumber-1
+UH = uhigh[Ubin]
+UL = ulow[Ubin]
+Ucondition = (df['u']<UL) | (df['u']>UH)
+#np.shape(np.where(Ucondition==True))[1]
 
-ax = plt.subplot2grid((4,4), (0,0), colspan=1,rowspan=4)
-plt.plot(df['velprof'],df['z'],'b.')
-plt.plot(Emean,Zcenter,color = 'grey',marker='none',linestyle='-',linewidth=2,alpha=0.8,label ='Emean')
-plt.axvline(x=0.1, color='r', linestyle='--')
-plt.axvline(x=-0.1, color='r', linestyle='--')
-ax.set_ylabel('e m/s')
+# Calc V outliers 
+print('calc v outliers...')
+Vmean, bin_edges, binnumber = stats.binned_statistic(df['z'], df['v'], statistic=np.nanmean, bins=binedges)
+Vstd, bin_edges, binnumber = stats.binned_statistic(df['z'], df['v'], statistic=np.nanstd, bins=binedges)
+vhigh = Vmean+7*Vstd
+vlow = Vmean-7*Vstd
+# adjust bin numbers to python 0 = 1st and assign uhigh and ulows
+Vbin = binnumber-1
+VH = vhigh[Vbin]
+VL = vlow[Vbin]
+Vcondition = (df['v']<VL) | (df['v']>VH)
 
-ax1 = plt.subplot2grid((4,4), (0,2), colspan=1,rowspan=4)
-plt.plot(df['velprof'],df['z'],'b.')
-plt.plot(Emean,Zcenter,color = 'grey',marker='none',linestyle='-',linewidth=2,alpha=0.8,label ='Emean')
-plt.plot(Emean-Estd,Zcenter,color = 'grey',marker='none',linestyle='-',linewidth=2,alpha=0.8)
-plt.plot(Emean+Estd,Zcenter,color = 'grey',marker='none',linestyle='-',linewidth=2,alpha=0.8)
-plt.axvline(x=0.1, color='r', linestyle='--')
-plt.axvline(x=-0.1, color='r', linestyle='--')
-plt.axvline(x=0.05, color='c', linestyle='--')
-plt.axvline(x=-0.05, color='c', linestyle='--')
-ax1.set_ylim([-100,-5])
-ax1.set_xlim([-0.5,0.5])
-ax1.set_ylabel('e m/s')
+# Calc W outliers 
+print('calc w outliers...')
+Wmean, bin_edges, binnumber = stats.binned_statistic(df['z'], df['w'], statistic=np.nanmean, bins=binedges)
+Wstd, bin_edges, binnumber = stats.binned_statistic(df['z'], df['w'], statistic=np.nanstd, bins=binedges)
+whigh = Wmean+7*Wstd
+wlow = Wmean-7*Wstd
+# adjust bin numbers to python 0 = 1st and assign uhigh and ulows
+Wbin = binnumber-1
+WH = whigh[Wbin]
+WL = wlow[Wbin]
+Wcondition = (df['w']<WL) | (df['w']>WH)
 
-sys.exit()
-'''
-######################################################################################################
+print('setting outliers to nan...')
+df['UVcondition'] = Ucondition | Vcondition
+df['Wcondition'] = Wcondition
+
+# if flag in u,v then uvw = nan
+df.loc[df['UVcondition'],'u'] = np.nan
+df.loc[df['UVcondition'],'v'] = np.nan
+df.loc[df['UVcondition'],'w'] = np.nan
+# flag outliers in w
+df.loc[df['Wcondition'],'w'] = np.nan
+
+###############################################################################################################################
+###############################################################################################################################
 # group by timestamps 
 print('grouping by timestamp...')
 Zgroup = df.groupby('datetimes')['z'].apply(list).reset_index(name='z')  
@@ -159,7 +183,7 @@ Vgroup = df.groupby('datetimes')['v'].apply(list).reset_index(name='v')
 print('grouped v')
 Wgroup = df.groupby('datetimes')['w'].apply(list).reset_index(name='w')
 print('grouped w')
-Egroup = df.groupby('datetimes')['velprof'].apply(list).reset_index(name='e')
+Egroup = df.groupby('datetimes')['e'].apply(list).reset_index(name='e')
 print('grouped error')
 
 ###############################################################################################################################
@@ -201,114 +225,8 @@ Egroup_copy['dup_ind']=Zgroup_copy['dup_ind'].copy()
 Egroup_copy['has_duplicates'] = Zgroup_copy['has_duplicates'].copy()
 Egroup_copy['new_value'] = Egroup_copy.apply(lambda row: np.array(row['velprof'])[row['dup_ind']] if row['has_duplicates'] else np.array(row['velprof']), axis=1)
 
-###############################################################################################################################
-# housekeeping
-print('cleaning up ...')
-del Zgroup, Ugroup, Vgroup, Wgroup, Egroup
-if loco == 'mfd':
-    columns_to_drop = ['z', 'Zmin', 'Zmax', 'dup_ind', 'has_duplicates']
-if loco == 'nsif':
-    columns_to_drop = ['z', 'dup_ind', 'has_duplicates']
-Zgroup_copy = Zgroup_copy.set_index('datetimes')
-Zgroup_copy = Zgroup_copy.drop(columns_to_drop,axis=1)
 
-columns_to_drop = ['u', 'dup_ind', 'has_duplicates']
-Ugroup_copy = Ugroup_copy.set_index('datetimes')
-Ugroup_copy = Ugroup_copy.drop(columns_to_drop,axis=1)
-
-columns_to_drop = ['v', 'dup_ind', 'has_duplicates']
-Vgroup_copy = Vgroup_copy.set_index('datetimes')
-Vgroup_copy = Vgroup_copy.drop(columns_to_drop,axis=1)
-
-columns_to_drop = ['w', 'dup_ind', 'has_duplicates']
-Wgroup_copy = Wgroup_copy.set_index('datetimes')
-Wgroup_copy = Wgroup_copy.drop(columns_to_drop,axis=1)
-
-columns_to_drop = ['velprof', 'dup_ind', 'has_duplicates']
-Egroup_copy = Egroup_copy.set_index('datetimes')
-Egroup_copy = Egroup_copy.drop(columns_to_drop,axis=1)
-
-###############################################################################################################################
-if loco == 'mfd':
-    print('surface clipping ...')
-    # clipping shallower than -30m , just to make it smaller (we clip in the binedges step w/ -50m center)
-    Zgroup_copy['idx_to_drop'] = Zgroup_copy.apply(lambda row: np.where(row['new_value']>-30), axis=1) 
-    Zgroup_copy['needs_clipp'] = Zgroup_copy['idx_to_drop'].apply(lambda x: len(x) > 0)
-    Zgroup_copy['clipped_value'] = Zgroup_copy.apply(lambda row: np.delete(np.array(row['new_value']),row['idx_to_drop']) if row['needs_clipp'] else np.array(row['new_value']),axis=1)
-
-    Ugroup_copy['needs_clipp']=Zgroup_copy['needs_clipp'].copy()
-    Ugroup_copy['idx_to_drop'] = Zgroup_copy['idx_to_drop'].copy()
-    Ugroup_copy['clipped_value'] = Ugroup_copy.apply(lambda row: np.delete(np.array(row['new_value']),row['idx_to_drop']) if row['needs_clipp'] else np.array(row['new_value']),axis=1)
-    
-    Vgroup_copy['needs_clipp']=Zgroup_copy['needs_clipp'].copy()
-    Vgroup_copy['idx_to_drop'] = Zgroup_copy['idx_to_drop'].copy()
-    Vgroup_copy['clipped_value'] = Vgroup_copy.apply(lambda row: np.delete(np.array(row['new_value']),row['idx_to_drop']) if row['needs_clipp'] else np.array(row['new_value']),axis=1)
-    
-    Wgroup_copy['needs_clipp']=Zgroup_copy['needs_clipp'].copy()
-    Wgroup_copy['idx_to_drop'] = Zgroup_copy['idx_to_drop'].copy()
-    Wgroup_copy['clipped_value'] = Wgroup_copy.apply(lambda row: np.delete(np.array(row['new_value']),row['idx_to_drop']) if row['needs_clipp'] else np.array(row['new_value']),axis=1)
-    
-    Egroup_copy['needs_clipp']=Zgroup_copy['needs_clipp'].copy()
-    Egroup_copy['idx_to_drop'] = Zgroup_copy['idx_to_drop'].copy()
-    Egroup_copy['clipped_value'] = Egroup_copy.apply(lambda row: np.delete(np.array(row['new_value']),row['idx_to_drop']) if row['needs_clipp'] else np.array(row['new_value']),axis=1)
-
-    #Zgroup_copy['spacing'] = Zgroup.apply(lambda row: np.diff(row['clipped_value']), axis=1)
-    #len(Zgroup_copy) == len(Ugroup_copy) == len(Vgroup_copy) == len(Wgroup_copy)
-
-###############################################################################################################################
-# we're going to flatten these 
-print('flattening dataframe ...')
-Zgroup_copy = Zgroup_copy.reset_index()
-Ugroup_copy = Ugroup_copy.reset_index()
-Vgroup_copy = Vgroup_copy.reset_index()
-Wgroup_copy = Wgroup_copy.reset_index()
-Egroup_copy = Egroup_copy.reset_index()
-
-if loco == 'mfd':
-    Z = pd.DataFrame({'datetimes':Zgroup_copy['datetimes'],'Z':Zgroup_copy['clipped_value']})
-    U = pd.DataFrame({'datetimes':Ugroup_copy['datetimes'],'U':Ugroup_copy['clipped_value']})
-    V = pd.DataFrame({'datetimes':Vgroup_copy['datetimes'],'V':Vgroup_copy['clipped_value']})
-    W = pd.DataFrame({'datetimes':Wgroup_copy['datetimes'],'W':Wgroup_copy['clipped_value']})
-    E = pd.DataFrame({'datetimes':Egroup_copy['datetimes'],'E':Egroup_copy['clipped_value']})
-if loco == 'nsif':
-    Z = pd.DataFrame({'datetimes':Zgroup_copy['datetimes'],'Z':Zgroup_copy['new_value']})
-    U = pd.DataFrame({'datetimes':Ugroup_copy['datetimes'],'U':Ugroup_copy['new_value']})
-    V = pd.DataFrame({'datetimes':Vgroup_copy['datetimes'],'V':Vgroup_copy['new_value']})
-    W = pd.DataFrame({'datetimes':Wgroup_copy['datetimes'],'W':Wgroup_copy['new_value']})
-    E = pd.DataFrame({'datetimes':Egroup_copy['datetimes'],'E':Egroup_copy['new_value']})
-
-Zflatdata = pd.DataFrame([(index, value) for (index, values)
-                         in Z['Z'].items() for value in values],
-                             columns = ['index','Z']).set_index('index')
-Z = Z.drop('Z', axis=1).join(Zflatdata)
-
-Uflatdata = pd.DataFrame([(index, value) for (index, values)
-                         in U['U'].items() for value in values],
-                             columns = ['index','U']).set_index('index')
-U = U.drop('U', axis=1).join(Uflatdata)
-
-Vflatdata = pd.DataFrame([(index, value) for (index, values)
-                         in V['V'].items() for value in values],
-                             columns = ['index','V']).set_index('index')
-V = V.drop('V', axis=1).join(Vflatdata)
-
-Wflatdata = pd.DataFrame([(index, value) for (index, values)
-                         in W['W'].items() for value in values],
-                             columns = ['index','W']).set_index('index')
-W = W.drop('W', axis=1).join(Wflatdata)
-
-Eflatdata = pd.DataFrame([(index, value) for (index, values)
-                         in E['E'].items() for value in values],
-                             columns = ['index','E']).set_index('index')
-E = E.drop('E', axis=1).join(Eflatdata)
-
-###############################################################################################################################
-# Remove vars if gt error threshold 
-condition = abs(E['E']) > error_threshold 
-U['Unew'] = np.where(condition == True, np.nan, U['U'])
-V['Vnew'] = np.where(condition == True, np.nan, V['V'])
-W['Wnew'] = np.where(condition == True, np.nan, W['W'])
-E['Enew'] = np.where(condition == True, np.nan, E['E'])
+sys.exit()
 '''
 ###############################################################################################################################
 #grid data 
@@ -319,9 +237,9 @@ if loco == 'mfd':
     binedges = np.append(binedges,binedges[-1]+5)
 
 if loco == 'nsif':
-    Zcenter = np.arange(-55,-10,1)  # originally went to 
-    binedges = Zcenter-0.5
-    binedges = np.append(binedges,binedges[-1]+1)
+    Zcenter2 = np.arange(-55,-7,1)  
+    binedges2 = Zcenter2-0.5
+    binedges2 = np.append(binedges2,binedges2[-1]+1)
 
 NZc = np.shape(Zcenter)[0]
 NTc = np.shape(Zgroup['datetimes'].unique())[0]
@@ -335,14 +253,12 @@ vb = np.ones([NTc,NZc])*np.nan
 wb = np.ones([NTc,NZc])*np.nan
 eb = np.ones([NTc,NZc])*np.nan
 
-'''
 # update: put UVWE new if filter before hand 
-Zgroupi = Z.groupby('datetimes')['Z'].apply(list).reset_index(name='z')
-Ugroupi = U.groupby('datetimes')['Unew'].apply(list).reset_index(name='u')
-Vgroupi = V.groupby('datetimes')['Vnew'].apply(list).reset_index(name='v')
-Wgroupi = W.groupby('datetimes')['Wnew'].apply(list).reset_index(name='w')
-Egroupi = E.groupby('datetimes')['Enew'].apply(list).reset_index(name='e')
-'''
+Zgroup = df.groupby('datetimes')['z'].apply(list).reset_index(name='z')
+Ugroup = df.groupby('datetimes')['u'].apply(list).reset_index(name='u')
+Vgroup = df.groupby('datetimes')['v'].apply(list).reset_index(name='v')
+Wgroup = df.groupby('datetimes')['w'].apply(list).reset_index(name='w')
+Egroup = df.groupby('datetimes')['e'].apply(list).reset_index(name='e')
 
 for idx in range(NTc):
     ui = Ugroup['u'][idx] 
@@ -369,36 +285,8 @@ for idx in range(NTc):
     wb[idx,:] = wstat
     eb[idx,:] = estat
 
-###############################################################################################################################
-# remove big spikes 
-print('removing outliers...')
-umean = np.nanmean(ub,axis=0)
-ustd = np.nanstd(ub,axis=0)
-uhigh = umean+7*ustd
-ulow = umean-7*ustd
-ub[(ub<ulow) | (ub>uhigh)] = np.nan
-
-vmean = np.nanmean(vb,axis=0)
-vstd = np.nanstd(vb,axis=0)
-vhigh = vmean+7*vstd
-vlow = vmean-7*vstd
-vb[(vb<vlow) | (vb>vhigh)] = np.nan
-
-wmean = np.nanmean(wb,axis=0)
-wstd = np.nanstd(wb,axis=0)
-whigh = wmean+7*wstd
-wlow = wmean-7*wstd
-wb[(wb<wlow) | (wb>whigh)] = np.nan
-
-condition1 = (wb<wlow) | (wb>whigh)
-condition2 = (vb<vlow) | (vb>vhigh)
-condition3 = (ub<ulow) | (ub>uhigh)
-conditions =  condition2 | condition3 
-
-ub[conditions==True] = np.nan 
-vb[conditions==True] = np.nan 
-wb[conditions==True] = np.nan 
-wb[condition1==True] = np.nan
+    #plt.plot(ui,zi,'bo-')
+    #plt.plot(ub[idx,:],zb[idx,:],'r*')
 
 ###############################################################################################################################
 # put to ds and save 
@@ -439,3 +327,37 @@ if loco == 'mfd':
 ADCP.to_netcdf(fn_o, unlimited_dims='ocean_time')
 
 print('saved!')
+
+
+
+
+
+'''
+plt.close('all')
+fs=14
+plt.rc('font', size=fs)
+fig = plt.figure(figsize=(18,10))
+fig.set_size_inches(18,10, forward=False)
+
+ax = plt.subplot2grid((4,4), (0,0), colspan=1,rowspan=4)
+plt.plot(df['velprof'],df['z'],'b.')
+plt.plot(Emean,Zcenter,color = 'grey',marker='none',linestyle='-',linewidth=2,alpha=0.8,label ='Emean')
+plt.axvline(x=0.1, color='r', linestyle='--')
+plt.axvline(x=-0.1, color='r', linestyle='--')
+ax.set_ylabel('e m/s')
+
+ax1 = plt.subplot2grid((4,4), (0,2), colspan=1,rowspan=4)
+plt.plot(df['velprof'],df['z'],'b.')
+plt.plot(Emean,Zcenter,color = 'grey',marker='none',linestyle='-',linewidth=2,alpha=0.8,label ='Emean')
+plt.plot(Emean-Estd,Zcenter,color = 'grey',marker='none',linestyle='-',linewidth=2,alpha=0.8)
+plt.plot(Emean+Estd,Zcenter,color = 'grey',marker='none',linestyle='-',linewidth=2,alpha=0.8)
+plt.axvline(x=0.1, color='r', linestyle='--')
+plt.axvline(x=-0.1, color='r', linestyle='--')
+plt.axvline(x=0.05, color='c', linestyle='--')
+plt.axvline(x=-0.05, color='c', linestyle='--')
+ax1.set_ylim([-100,-5])
+ax1.set_xlim([-0.5,0.5])
+ax1.set_ylabel('e m/s')
+
+sys.exit()
+'''
