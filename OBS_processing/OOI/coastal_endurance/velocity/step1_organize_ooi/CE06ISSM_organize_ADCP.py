@@ -12,6 +12,8 @@ CE06ISSM has 3495 w/c sets of duplicate values
 ooi-ce06issm-mfd35-01-vel3dd000_21b5_1859_99b7.nc  ooi-ce06issm-mfd35-04-adcptm000_dad4_820b_2d26.nc
 
 this is ugly inflexible code, improve later :O
+(after tried to rerun all processing files after 8 june 2025-- run time was super long. 
+Changed some code to speed up...)
 '''
 
 import sys
@@ -21,6 +23,12 @@ import numpy as np
 import pandas as pd 
 from datetime import datetime
 from scipy import stats
+import posixpath 
+import warnings
+
+from lo_tools import Lfun
+
+Ldir = Lfun.Lstart()
 
 import matplotlib.pyplot as plt
 
@@ -43,8 +51,11 @@ error_threshold = 0.1
 moor = 'CE06ISSM'
 loco = 'mfd'
 
-ds = xr.open_dataset('/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE06ISSM/velocity/mfd/ooi-ce06issm-mfd35-04-adcptm000_dad4_820b_2d26.nc', decode_times=True)
-out_dir = '/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE06ISSM/velocity/mfd'
+in_dir = Ldir['parent'] / 'LKH_data' / 'OOI' / 'CE' / 'coastal_moorings' / moor / 'velocity' / loco 
+fn_in = posixpath.join(in_dir, 'ooi-ce06issm-mfd35-04-adcptm000_dad4_820b_2d26.nc') 
+ds = xr.open_dataset(fn_in, decode_times=True)
+
+out_dir = Ldir['parent'] / 'LKH_data'/'OOI'/'CE'/'coastal_moorings'/moor/'velocity'/loco
 
 if os.path.exists(out_dir)==False:
     Lfun.make_dir(out_dir, clean = False)
@@ -70,9 +81,16 @@ df['v'] = ds.northward_sea_water_velocity.values
 df['w'] = ds.upward_sea_water_velocity.values
 df['velprof'] = ds.velprof_evl.values
 
-print('grouping by timestamp...')
+# set vars to nan if > error threshold 
+df['Econdition'] = abs(df['velprof']) > error_threshold 
+df.loc[df['Econdition'],'u'] = np.nan # take all the u rows where Econdition == True and set to nan
+df.loc[df['Econdition'],'v'] = np.nan
+df.loc[df['Econdition'],'w'] = np.nan # error is for u,v, but flagging w. not sure what's best here...
+df.loc[df['Econdition'],'velprof'] = np.nan
+
 #############################################################################################################
 # group by timestamps 
+print('grouping by timestamp...')
 Zgroup = df.groupby('datetimes')['z'].apply(list).reset_index(name='z')  
 # check timestamps for duplicate entries
 duplicates = Zgroup.duplicated(subset='datetimes')
@@ -128,6 +146,7 @@ Egroup_copy['dup_ind']=Zgroup_copy['dup_ind'].copy()
 Egroup_copy['has_duplicates'] = Zgroup_copy['has_duplicates'].copy()
 Egroup_copy['new_value'] = Egroup_copy.apply(lambda row: np.array(row['velprof'])[row['dup_ind']] if row['has_duplicates'] else np.array(row['velprof']), axis=1)
 
+'''
 print('cleaning up ...')
 # housekeeping
 del Zgroup, Ugroup, Vgroup, Wgroup, Egroup
@@ -150,10 +169,11 @@ Egroup_copy = Egroup_copy.drop(columns_to_drop,axis=1)
 # we're going to flatten these 
 print('flattening dataframe ...')
 Zgroup_copy = Zgroup_copy.reset_index()
-#Ugroup_copy = Ugroup_copy.reset_index()
-#Vgroup_copy = Vgroup_copy.reset_index()
-#Wgroup_copy = Wgroup_copy.reset_index()
-#Egroup_copy = Egroup_copy.reset_index()
+Ugroup_copy = Ugroup_copy.reset_index()
+Vgroup_copy = Vgroup_copy.reset_index()
+Wgroup_copy = Wgroup_copy.reset_index()
+Egroup_copy = Egroup_copy.reset_index()
+'''
 
 Z = pd.DataFrame({'datetimes':Zgroup_copy['datetimes'],'Z':Zgroup_copy['new_value']})
 U = pd.DataFrame({'datetimes':Ugroup_copy['datetimes'],'U':Ugroup_copy['new_value']})
@@ -161,6 +181,7 @@ V = pd.DataFrame({'datetimes':Vgroup_copy['datetimes'],'V':Vgroup_copy['new_valu
 W = pd.DataFrame({'datetimes':Wgroup_copy['datetimes'],'W':Wgroup_copy['new_value']})
 E = pd.DataFrame({'datetimes':Egroup_copy['datetimes'],'E':Egroup_copy['new_value']})
 
+'''
 Zflatdata = pd.DataFrame([(index, value) for (index, values)
                          in Z['Z'].items() for value in values],
                              columns = ['index','Z']).set_index('index')
@@ -185,14 +206,8 @@ Eflatdata = pd.DataFrame([(index, value) for (index, values)
                          in E['E'].items() for value in values],
                              columns = ['index','E']).set_index('index')
 E = E.drop('E', axis=1).join(Eflatdata)
+'''
 
-###############################################################################################################################
-# Remove vars if gt error threshold 
-condition = abs(E['E']) > error_threshold 
-U['Unew'] = np.where(condition == True, np.nan, U['U'])
-V['Vnew'] = np.where(condition == True, np.nan, V['V'])
-W['Wnew'] = np.where(condition == True, np.nan, W['W'])
-E['Enew'] = np.where(condition == True, np.nan, E['E'])
 
 '''
 #len(W)==len(U)==len(Z)==len(E)==len(V)    
@@ -222,9 +237,9 @@ ax3.set_ylabel('E m/s')
 ###############################################################################################################################
 #grid data 
 print('gridding data ...')
-Zcenter = np.arange(-25,0,5) 
-binedges = Zcenter-2.5
-binedges = np.append(binedges,binedges[-1]+5)
+Zcenter = np.arange(-29,0,1)
+binedges = Zcenter-0.5
+binedges = np.append(binedges,binedges[-1]+1)
 
 NZc = np.shape(Zcenter)[0]
 NTc = np.shape(Z['datetimes'].unique())[0]
@@ -247,11 +262,11 @@ Egroupi = E.groupby('datetimes')['Enew'].apply(list).reset_index(name='velprof')
 '''
 
 for idx in range(NTc):
-    ui = U['Unew'][U['datetimes']==dti[idx]]
-    vi = V['Vnew'][V['datetimes']==dti[idx]]
-    wi = W['Wnew'][W['datetimes']==dti[idx]]
-    ei = E['Enew'][E['datetimes']==dti[idx]]
-    zi = Z['Z'][Z['datetimes']==dti[idx]]
+    ui = U['U'][idx] 
+    vi = V['V'][idx] 
+    wi = W['W'][idx] 
+    ei = E['E'][idx] 
+    zi = Z['Z'][idx] 
 
     #ui = Ugroupi['u'].iloc[idx]
     #vi = Vgroupi['v'].iloc[idx]

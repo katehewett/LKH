@@ -147,14 +147,15 @@ elif np.any(duplicates):
     print('duplicates in time')
     sys.exit()
 
-#mfd drop if the ...
-#min z is deeper than 540m  
-#min z doesn't reach deeper than 495m 
-#max z is shallower than -100m drop
+#weird OOI flags made strange depths; drop if the ...
 if loco == 'mfd':
     Zgroup['Zmin'] = Zgroup.apply(lambda row: np.nanmin(row['z']), axis=1)
     Zgroup['Zmax'] = Zgroup.apply(lambda row: np.nanmax(row['z']), axis=1)
     idx2_to_drop = Zgroup[(Zgroup['Zmin'] < -89) | (Zgroup['Zmax'] < -30)].index 
+    Zgroup = Zgroup.drop(idx2_to_drop, inplace=False)
+if loco == 'nsif':
+    Zgroup['Zmax'] = Zgroup.apply(lambda row: np.nanmax(row['z']), axis=1)
+    idx2_to_drop = Zgroup[Zgroup['Zmax'] > -7].index 
     Zgroup = Zgroup.drop(idx2_to_drop, inplace=False)
 
 Ugroup = df.groupby('datetimes')['u'].apply(list).reset_index(name='u')
@@ -345,27 +346,27 @@ vb = np.ones([NTc,NZc])*np.nan
 wb = np.ones([NTc,NZc])*np.nan
 eb = np.ones([NTc,NZc])*np.nan
 
-'''
+
 # update: put UVWE new if filter before hand 
 Zgroupi = Z.groupby('datetimes')['Z'].apply(list).reset_index(name='z')
 Ugroupi = U.groupby('datetimes')['Unew'].apply(list).reset_index(name='u')
 Vgroupi = V.groupby('datetimes')['Vnew'].apply(list).reset_index(name='v')
 Wgroupi = W.groupby('datetimes')['Wnew'].apply(list).reset_index(name='w')
 Egroupi = E.groupby('datetimes')['Enew'].apply(list).reset_index(name='e')
-'''
+
 
 for idx in range(NTc):
-    ui = U['Unew'][U['datetimes']==dti[idx]]
+    '''ui = U['Unew'][U['datetimes']==dti[idx]]
     vi = V['Vnew'][V['datetimes']==dti[idx]]
     wi = W['Wnew'][W['datetimes']==dti[idx]]
     ei = E['Enew'][E['datetimes']==dti[idx]]
-    zi = Z['Z'][Z['datetimes']==dti[idx]]
+    zi = Z['Z'][Z['datetimes']==dti[idx]]'''
 
-    #ui = Ugroupi['u'].iloc[idx]
-    #vi = Vgroupi['v'].iloc[idx]
-    #wi = Wgroupi['w'].iloc[idx]
-    #ei = Egroupi['e'].iloc[idx]
-    #zi = Zgroupi['z'].iloc[idx]
+    ui = Ugroupi['u'].iloc[idx]
+    vi = Vgroupi['v'].iloc[idx]
+    wi = Wgroupi['w'].iloc[idx]
+    ei = Egroupi['e'].iloc[idx]
+    zi = Zgroupi['z'].iloc[idx]
     #statistic, bin_edges, binnumber = stats.binned_statistic(x, values, statistic='mean', bins=bins)
     #x the data to be binned; values the values on which the statistic will be computed 
     # values must have the same shape as x or be a list of arrays with the same shape as x)
