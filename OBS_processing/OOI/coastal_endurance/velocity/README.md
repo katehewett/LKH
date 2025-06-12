@@ -40,6 +40,7 @@ Coastal Endurance. Site Designation 01, Oregon Line. Inner Shelf. Surface Moorin
 >**Note: The numbers (1-6) on Figure 1 mark current mooring locations, but do not represent the site designation number in each mooring name.** But rather, the Washington Line Moorings (as labeled 4-6 on Figure 1) are named CE06, CE07, and CE09, respectively. The Oregon Line Moorings (as labeled 1-3 on Figure 1) are named CE01, CE02, and CE04, respectively. CE08 and CE04 were intentionally skipped and held as a placeholders for potential mooring locations (@ ~130-150m depth). 
 
 ## Velocity data inventory:  
+**WASHINGTON**  
 An inventory of velocity data (+instruments +named files) are located here:  
 /Users/katehewett/Documents/LKH_data/OOI/CE (personal computer)  
 /dat1/kmhewett/LKH_data/OOI/CE (on apogee)
@@ -47,11 +48,21 @@ An inventory of velocity data (+instruments +named files) are located here:
 *If curious (or forget), and trying to follow naming structures of downloaded data, Appendix A provides a description of the coding system OOI teams use to track their instruments. The OOI *"Reference Designator"* system is described with links and an example.*
 
 ## Processing steps:  
+**WASHINGTON**  
+*KH housekeeping. v1_8June2025: an old set of code used to explore velocity data. Deleted all output files; made a new version; and started over for consistency.*
+
+Once we have all the velcoity data from the WA OOI line [insert photo]
+
+[make whats there plot]
+
+Some instruments look like they have been QC'd a little more than others. This is a less rigirous QC just so that we can compare LO output with OOI velocities.   
+1. **(A)** Remove spots where the Z are way off. It looks like a flag value of -999 and/or -9999 was used, but then the bins were saved instead of deleting. If this was the case, the whole WC value for that timestamp was dropped. **(B)** Remove duplicates: There are ~104k+ duplicates because of a double saving error. For a subset of time there are raw binned velocities saved and velocities saved with 10 decimal spaces. 
+2. Remove 10*STD crazy outliers from each instrument type.  
 
 
-
-
-
+3. Take out the weird profile in XXX
+4. Re-bin data so we can take daily averages and process. 
+5. Run a spike test 
 
 
 ---

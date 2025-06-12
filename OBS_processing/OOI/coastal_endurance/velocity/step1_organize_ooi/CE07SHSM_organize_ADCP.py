@@ -1,19 +1,16 @@
 '''
-First step for CE09OSSM
-CE09OSSM_organize_ADCPs.py
+First step for CE07SHSM
 
 This code is to process data from OOI for the WA surface mooring velocity data.
 
 The ADCP data has already been binned by OOI/Axiom and is provides u,v,w (and error, see README)
 Upward facing on MFD; downward NSIF
 
-'/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE09OSSM/velocity/mfd'
+'/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE07SHSM/velocity/mfd'
 ooi-ce09ossm-mfd35-04-adcpsj000_ff2d_359a_11eb.nc
 
 '/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE09OSSM/velocity/nsif'
 ooi-ce09ossm-rid26-01-adcptc000_dad4_820b_2d26.nc
-
-(1) there are duplicates like there were in CE06ISSM, + there are wacky depths in the upward adcp
 
 this is ugly inflexible code, improve later :O
 '''
@@ -45,16 +42,16 @@ def find_duplicate_indices(list_):
 
 error_threshold = 0.1
 
-moor = 'CE09OSSM'
-loco = 'mfd'
-#loco = 'nsif'
+moor = 'CE07SHSM'
+#loco = 'mfd'
+loco = 'nsif'
 
 if loco == 'nsif':
-    ds = xr.open_dataset('/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE09OSSM/velocity/nsif/ooi-ce09ossm-rid26-01-adcptc000_dad4_820b_2d26.nc', decode_times=True)
-    out_dir = '/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE09OSSM/velocity/nsif'
+    ds = xr.open_dataset('/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE07SHSM/velocity/nsif/ooi-ce07shsm-rid26-01-adcpta000_dad4_820b_2d26.nc', decode_times=True)
+    out_dir = '/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE07SHSM/velocity/nsif'
 elif loco == 'mfd':
-    ds = xr.open_dataset('/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE09OSSM/velocity/mfd/ooi-ce09ossm-mfd35-04-adcpsj000_ff2d_359a_11eb.nc', decode_times=True)
-    out_dir = '/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE09OSSM/velocity/mfd'
+    ds = xr.open_dataset('/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE07SHSM/velocity/mfd/ooi-ce07shsm-mfd35-04-adcptc000_dad4_820b_2d26.nc', decode_times=True)
+    out_dir = '/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE07SHSM/velocity/mfd'
 
 if os.path.exists(out_dir)==False:
     Lfun.make_dir(out_dir, clean = False)
@@ -79,11 +76,6 @@ df['u'] = ds.eastward_sea_water_velocity.values
 df['v'] = ds.northward_sea_water_velocity.values
 df['w'] = ds.upward_sea_water_velocity.values
 df['velprof'] = ds.velprof_evl.values
-
-if loco == 'mfd':
-    a_datetime = datetime(2015, 5, 2, 16, 00, 0) # clipping profiles before this time (suspect)
-    idx_to_drop = df[(df['datetimes'] < a_datetime)].index 
-    df = df.drop(idx_to_drop, inplace=False)
 
 ######################################################################################################
 '''
@@ -153,7 +145,7 @@ elif np.any(duplicates):
 if loco == 'mfd':
     Zgroup['Zmin'] = Zgroup.apply(lambda row: np.nanmin(row['z']), axis=1)
     Zgroup['Zmax'] = Zgroup.apply(lambda row: np.nanmax(row['z']), axis=1)
-    idx2_to_drop = Zgroup[(Zgroup['Zmin'] < -540) | (Zgroup['Zmin'] > -495) | (Zgroup['Zmax'] < -100)].index 
+    idx2_to_drop = Zgroup[(Zgroup['Zmin'] < -89) | (Zgroup['Zmax'] < -30)].index 
     Zgroup = Zgroup.drop(idx2_to_drop, inplace=False)
 
 Ugroup = df.groupby('datetimes')['u'].apply(list).reset_index(name='u')
@@ -323,17 +315,20 @@ E['Enew'] = np.where(condition == True, np.nan, E['E'])
 #grid data 
 print('gridding data ...')
 if loco == 'mfd':
-    Zcenter = np.arange(-530,-49,15)  
-    binedges = Zcenter-7.5
-    binedges = np.append(binedges,binedges[-1]+15)
+    Zcenter = np.arange(-80,-9,5)  # originally went to 
+    binedges = Zcenter-2.5
+    binedges = np.append(binedges,binedges[-1]+5)
 
 if loco == 'nsif':
-    Zcenter = np.arange(-95,-14,5) 
+    Zcenter = np.arange(-50,-14,5)  # originally went to 
     binedges = Zcenter-2.5
     binedges = np.append(binedges,binedges[-1]+5)
 
 NZc = np.shape(Zcenter)[0]
 NTc = np.shape(Z['datetimes'].unique())[0]
+
+dti = Z['datetimes'].unique()
+print('NTc: '+str(NTc))
 
 zb = np.ones([NTc,NZc])*np.nan
 ub = np.ones([NTc,NZc])*np.nan
@@ -341,20 +336,27 @@ vb = np.ones([NTc,NZc])*np.nan
 wb = np.ones([NTc,NZc])*np.nan
 eb = np.ones([NTc,NZc])*np.nan
 
+'''
 # update: put UVWE new if filter before hand 
 Zgroupi = Z.groupby('datetimes')['Z'].apply(list).reset_index(name='z')
 Ugroupi = U.groupby('datetimes')['Unew'].apply(list).reset_index(name='u')
 Vgroupi = V.groupby('datetimes')['Vnew'].apply(list).reset_index(name='v')
 Wgroupi = W.groupby('datetimes')['Wnew'].apply(list).reset_index(name='w')
 Egroupi = E.groupby('datetimes')['Enew'].apply(list).reset_index(name='e')
+'''
 
 for idx in range(NTc):
-    ui = Ugroupi['u'].iloc[idx]
-    vi = Vgroupi['v'].iloc[idx]
-    wi = Wgroupi['w'].iloc[idx]
-    ei = Egroupi['e'].iloc[idx]
-    zi = Zgroupi['z'].iloc[idx]
-    
+    ui = U['Unew'][U['datetimes']==dti[idx]]
+    vi = V['Vnew'][V['datetimes']==dti[idx]]
+    wi = W['Wnew'][W['datetimes']==dti[idx]]
+    ei = E['Enew'][E['datetimes']==dti[idx]]
+    zi = Z['Z'][Z['datetimes']==dti[idx]]
+
+    #ui = Ugroupi['u'].iloc[idx]
+    #vi = Vgroupi['v'].iloc[idx]
+    #wi = Wgroupi['w'].iloc[idx]
+    #ei = Egroupi['e'].iloc[idx]
+    #zi = Zgroupi['z'].iloc[idx]
     #statistic, bin_edges, binnumber = stats.binned_statistic(x, values, statistic='mean', bins=bins)
     #x the data to be binned; values the values on which the statistic will be computed 
     # values must have the same shape as x or be a list of arrays with the same shape as x)

@@ -42,7 +42,7 @@ Pmfn = xr.open_dataset('/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moor
 Pseafloor = xr.open_dataset('/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE06ISSM/pressure/mfd/ooi-ce06issm-mfd35-02-presfa000_2d0a_0cb6_f73c.nc', decode_times=True)
 fn_o = '/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE06ISSM/pressure/mfd'
 
-if os.path.exists(fn_o)==False:
+if os.path.exists(out_dir)==False:
     Lfun.make_dir(out_dir, clean = False)
 
 sys.exit()
