@@ -13,6 +13,7 @@ ooi-ce09ossm-mfd35-04-adcpsj000_ff2d_359a_11eb.nc
 ooi-ce09ossm-rid26-01-adcptc000_dad4_820b_2d26.nc
 
 this is ugly inflexible code, improve later :O
+Altered to speed up post 8JUne2025
 '''
 
 import sys
@@ -86,18 +87,23 @@ df['v'] = ds.northward_sea_water_velocity.values
 df['w'] = ds.upward_sea_water_velocity.values
 df['velprof'] = ds.velprof_evl.values
 
+# set vars to nan if > error threshold 
+df['Econdition'] = abs(df['velprof']) > error_threshold 
+df.loc[df['Econdition'],'u'] = np.nan # take all the u rows where Econdition == True and set to nan
+df.loc[df['Econdition'],'v'] = np.nan
+df.loc[df['Econdition'],'w'] = np.nan # error is for u,v, but flagging w. not sure what's best here...
+df.loc[df['Econdition'],'velprof'] = np.nan
+
+# weird OOI flags had a few timestamps with entire WC shifted upwards. N=631. Remove them here:
+# This also removed the duplicates in zgroup for CE07SHSM nsif
+df.drop(df.loc[df['z']>-6].index,inplace=True)
+
 ######################################################################################################
 '''
 # check the data and a lot to see about the error term, there isn't a value calc'd for 2015 
-if loco == 'mfd':
-    Zcenter = np.arange(-530,-49,15)  
-    binedges = Zcenter-7.5
-    binedges = np.append(binedges,binedges[-1]+15)
-
-if loco == 'nsif':
-    Zcenter = np.arange(-95,-14,5) 
-    binedges = Zcenter-2.5
-    binedges = np.append(binedges,binedges[-1]+5)
+Zcenter = np.arange(-90,0,1)
+binedges = Zcenter-0.5
+binedges = np.append(binedges,binedges[-1]+1)
 
 #statistic, bin_edges, binnumber = stats.binned_statistic(x, values, statistic='mean', bins=bins)
 #x the data to be binned; values the values on which the statistic will be computed 
@@ -147,33 +153,17 @@ elif np.any(duplicates):
     print('duplicates in time')
     sys.exit()
 
-#weird OOI flags made strange depths; drop if the ...
-if loco == 'mfd':
-    Zgroup['Zmin'] = Zgroup.apply(lambda row: np.nanmin(row['z']), axis=1)
-    Zgroup['Zmax'] = Zgroup.apply(lambda row: np.nanmax(row['z']), axis=1)
-    idx2_to_drop = Zgroup[(Zgroup['Zmin'] < -89) | (Zgroup['Zmax'] < -30)].index 
-    Zgroup = Zgroup.drop(idx2_to_drop, inplace=False)
-if loco == 'nsif':
-    Zgroup['Zmax'] = Zgroup.apply(lambda row: np.nanmax(row['z']), axis=1)
-    idx2_to_drop = Zgroup[Zgroup['Zmax'] > -7].index 
-    Zgroup = Zgroup.drop(idx2_to_drop, inplace=False)
-
 Ugroup = df.groupby('datetimes')['u'].apply(list).reset_index(name='u')
-print('ugrouped')
+print('grouped u')
 Vgroup = df.groupby('datetimes')['v'].apply(list).reset_index(name='v')
-print('vgrouped')
+print('grouped v')
 Wgroup = df.groupby('datetimes')['w'].apply(list).reset_index(name='w')
-print('wgrouped')
-Egroup = df.groupby('datetimes')['velprof'].apply(list).reset_index(name='velprof')
-print('egrouped')
-
-if loco == 'mfd':
-    Ugroup = Ugroup.drop(idx2_to_drop, inplace=False)
-    Vgroup = Vgroup.drop(idx2_to_drop, inplace=False)
-    Wgroup = Wgroup.drop(idx2_to_drop, inplace=False)
-    Egroup = Egroup.drop(idx2_to_drop, inplace=False)
+print('grouped w')
+Egroup = df.groupby('datetimes')['velprof'].apply(list).reset_index(name='e')
+print('grouped error')
 
 ###############################################################################################################################
+'''
 # We know there are a lot of instances where velocities thru the water column
 # are repeated 2x for one timestamp. The next several lines of code will:
 # 1 - remove duplicates, and 2 - grab indicies of duplicates
@@ -210,7 +200,6 @@ Egroup_copy = Egroup.copy()
 Egroup_copy['dup_ind']=Zgroup_copy['dup_ind'].copy()
 Egroup_copy['has_duplicates'] = Zgroup_copy['has_duplicates'].copy()
 Egroup_copy['new_value'] = Egroup_copy.apply(lambda row: np.array(row['velprof'])[row['dup_ind']] if row['has_duplicates'] else np.array(row['velprof']), axis=1)
-
 
 ###############################################################################################################################
 # housekeeping
@@ -320,7 +309,7 @@ U['Unew'] = np.where(condition == True, np.nan, U['U'])
 V['Vnew'] = np.where(condition == True, np.nan, V['V'])
 W['Wnew'] = np.where(condition == True, np.nan, W['W'])
 E['Enew'] = np.where(condition == True, np.nan, E['E'])
-
+'''
 ###############################################################################################################################
 #grid data 
 print('gridding data ...')
@@ -330,14 +319,14 @@ if loco == 'mfd':
     binedges = np.append(binedges,binedges[-1]+5)
 
 if loco == 'nsif':
-    Zcenter = np.arange(-50,-14,5)  # originally went to 
-    binedges = Zcenter-2.5
-    binedges = np.append(binedges,binedges[-1]+5)
+    Zcenter = np.arange(-55,-10,1)  # originally went to 
+    binedges = Zcenter-0.5
+    binedges = np.append(binedges,binedges[-1]+1)
 
 NZc = np.shape(Zcenter)[0]
-NTc = np.shape(Z['datetimes'].unique())[0]
+NTc = np.shape(Zgroup['datetimes'].unique())[0]
 
-dti = Z['datetimes'].unique()
+#dti = Zgroup['datetimes'].unique()
 print('NTc: '+str(NTc))
 
 zb = np.ones([NTc,NZc])*np.nan
@@ -346,27 +335,22 @@ vb = np.ones([NTc,NZc])*np.nan
 wb = np.ones([NTc,NZc])*np.nan
 eb = np.ones([NTc,NZc])*np.nan
 
-
+'''
 # update: put UVWE new if filter before hand 
 Zgroupi = Z.groupby('datetimes')['Z'].apply(list).reset_index(name='z')
 Ugroupi = U.groupby('datetimes')['Unew'].apply(list).reset_index(name='u')
 Vgroupi = V.groupby('datetimes')['Vnew'].apply(list).reset_index(name='v')
 Wgroupi = W.groupby('datetimes')['Wnew'].apply(list).reset_index(name='w')
 Egroupi = E.groupby('datetimes')['Enew'].apply(list).reset_index(name='e')
-
+'''
 
 for idx in range(NTc):
-    '''ui = U['Unew'][U['datetimes']==dti[idx]]
-    vi = V['Vnew'][V['datetimes']==dti[idx]]
-    wi = W['Wnew'][W['datetimes']==dti[idx]]
-    ei = E['Enew'][E['datetimes']==dti[idx]]
-    zi = Z['Z'][Z['datetimes']==dti[idx]]'''
+    ui = Ugroup['u'][idx] 
+    vi = Vgroup['v'][idx] 
+    wi = Wgroup['w'][idx] 
+    ei = Egroup['e'][idx] 
+    zi = Zgroup['z'][idx] 
 
-    ui = Ugroupi['u'].iloc[idx]
-    vi = Vgroupi['v'].iloc[idx]
-    wi = Wgroupi['w'].iloc[idx]
-    ei = Egroupi['e'].iloc[idx]
-    zi = Zgroupi['z'].iloc[idx]
     #statistic, bin_edges, binnumber = stats.binned_statistic(x, values, statistic='mean', bins=bins)
     #x the data to be binned; values the values on which the statistic will be computed 
     # values must have the same shape as x or be a list of arrays with the same shape as x)
@@ -374,10 +358,10 @@ for idx in range(NTc):
     # bins = [1, 4, 7] # statistic >> array([[1.33333333, 2.25],[2.66666667, 4.5]])
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=RuntimeWarning)
-        ustat, bin_edges, binnumber = stats.binned_statistic(zi, ui, statistic='mean', bins=binedges)
-        vstat, bin_edges, binnumber = stats.binned_statistic(zi, vi, statistic='mean', bins=binedges)
-        wstat, bin_edges, binnumber = stats.binned_statistic(zi, wi, statistic='mean', bins=binedges)
-        estat, bin_edges, binnumber = stats.binned_statistic(zi, ei, statistic='mean', bins=binedges)
+        ustat, bin_edges, binnumber = stats.binned_statistic(zi, ui, statistic=np.nanmean, bins=binedges)
+        vstat, bin_edges, binnumber = stats.binned_statistic(zi, vi, statistic=np.nanmean, bins=binedges)
+        wstat, bin_edges, binnumber = stats.binned_statistic(zi, wi, statistic=np.nanmean, bins=binedges)
+        estat, bin_edges, binnumber = stats.binned_statistic(zi, ei, statistic=np.nanmean, bins=binedges)
 
     zb[idx,:] = Zcenter # just a checker
     ub[idx,:] = ustat
@@ -421,8 +405,8 @@ wb[condition1==True] = np.nan
 print('putting to ds...')
 
 ADCP = xr.Dataset()
-if np.all(Zgroupi['datetimes'].values==Ugroupi['datetimes'].values):
-    ADCP['ocean_time'] = (('ocean_time'), Zgroupi['datetimes'].values, {'long_name':'datetimes from OOI, 01-JAN-1970 00:00:00'})
+if np.all(Zgroup['datetimes'].values==Ugroup['datetimes'].values):
+    ADCP['ocean_time'] = (('ocean_time'), Zgroup['datetimes'].values, {'long_name':'datetimes from OOI, 01-JAN-1970 00:00:00'})
 else: 
     print('exited script; werid time errors')
     sys.exit()
@@ -443,14 +427,14 @@ if loco == 'nsif':
     ADCP['v'].attrs['moored_location'] = 'nsif ~7m below surface'
     ADCP['w'].attrs['moored_location'] = 'nsif ~7m below surface'
     print('nsif: ' + loco)
-    fn_o = out_dir + '/' + str(moor) + '_nsif_ADCP.nc'
+    fn_o = posixpath.join(out_dir , str(moor) + '_nsif_ADCP.nc')
 
 if loco == 'mfd':
     ADCP['u'].attrs['moored_location'] = 'mfd, depth ~540m'
     ADCP['v'].attrs['moored_location'] = 'mfd, depth ~540m'
     ADCP['w'].attrs['moored_location'] = 'mfd, depth ~540m'
     print('mfd: ' + loco)
-    fn_o = out_dir + '/' + str(moor) + '_mfd_ADCP.nc'
+    fn_o = posixpath.join(out_dir , str(moor) + '_mfd_ADCP.nc')
 
 ADCP.to_netcdf(fn_o, unlimited_dims='ocean_time')
 

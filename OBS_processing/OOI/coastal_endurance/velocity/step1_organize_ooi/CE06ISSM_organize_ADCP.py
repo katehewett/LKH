@@ -326,8 +326,8 @@ wb[condition1==True] = np.nan
 # put to ds and save 
 print('putting to ds...')
 ADCP = xr.Dataset()
-if np.all(Zgroupi['datetimes'].values==Ugroupi['datetimes'].values):
-    ADCP['ocean_time'] = (('ocean_time'), Zgroupi['datetimes'].values, {'long_name':'datetimes from OOI (time origin: 01-JAN-1970 00:00:00)'})
+if np.all(Z['datetimes'].values==U['datetimes'].values):
+    ADCP['ocean_time'] = (('ocean_time'), Z['datetimes'].values, {'long_name':'datetimes from OOI (time origin: 01-JAN-1970 00:00:00)'})
 else: 
     print('exited script; werid time errors')
     sys.exit()
@@ -346,7 +346,7 @@ ADCP['velprof'] = (('ocean_time','z'), eb, {'units':'m.s-1', 'long_name': 'Error
 ADCP['u'].attrs['moored_location'] = 'mfd, depth ~29m'
 ADCP['v'].attrs['moored_location'] = 'mfd, depth ~29m'
 ADCP['w'].attrs['moored_location'] = 'mfd, depth ~29m'
-fn_o = out_dir + '/' + str(moor) + '_mfd_ADCP.nc'
+fn_o = posixpath.join(out_dir , str(moor) + '_mfd_ADCP.nc')
 
 ADCP.to_netcdf(fn_o, unlimited_dims='ocean_time')
 
