@@ -260,7 +260,7 @@ Vgroup = df.groupby('datetimes')['v'].apply(list).reset_index(name='v')
 Wgroup = df.groupby('datetimes')['w'].apply(list).reset_index(name='w')
 Egroup = df.groupby('datetimes')['e'].apply(list).reset_index(name='e')
 
-for idx in range(NTc):
+for idx in range(15):
     ui = Ugroup['u'][idx] 
     vi = Vgroup['v'][idx] 
     wi = Wgroup['w'][idx] 
@@ -274,10 +274,10 @@ for idx in range(NTc):
     # bins = [1, 4, 7] # statistic >> array([[1.33333333, 2.25],[2.66666667, 4.5]])
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=RuntimeWarning)
-        ustat, bin_edges, binnumber = stats.binned_statistic(zi, ui, statistic=np.nanmean, bins=binedges)
-        vstat, bin_edges, binnumber = stats.binned_statistic(zi, vi, statistic=np.nanmean, bins=binedges)
-        wstat, bin_edges, binnumber = stats.binned_statistic(zi, wi, statistic=np.nanmean, bins=binedges)
-        estat, bin_edges, binnumber = stats.binned_statistic(zi, ei, statistic=np.nanmean, bins=binedges)
+        ustat, bin_edges, binnumber = stats.binned_statistic(zi, ui, statistic='mean', bins=binedges)
+        vstat, bin_edges, binnumber = stats.binned_statistic(zi, vi, statistic='mean', bins=binedges)
+        wstat, bin_edges, binnumber = stats.binned_statistic(zi, wi, statistic='mean', bins=binedges)
+        estat, bin_edges, binnumber = stats.binned_statistic(zi, ei, statistic='mean', bins=binedges)
 
     zb[idx,:] = Zcenter # just a checker
     ub[idx,:] = ustat
