@@ -26,6 +26,10 @@ import warnings
 
 import matplotlib.pyplot as plt
 
+from lo_tools import Lfun
+
+Ldir = Lfun.Lstart()
+
 ###############################################################################################################################
 # define a find duplicate function for QC of vel data below 
 # we know there are duplicate values from looking at the data 
@@ -47,11 +51,11 @@ moor = 'CE07SHSM'
 loco = 'nsif'
 
 if loco == 'nsif':
-    ds = xr.open_dataset('/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE07SHSM/velocity/nsif/ooi-ce07shsm-rid26-01-adcpta000_dad4_820b_2d26.nc', decode_times=True)
-    out_dir = '/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE07SHSM/velocity/nsif'
+    ds = xr.open_dataset(Ldir['parent']+'/LKH_data/OOI/CE/coastal_moorings/CE07SHSM/velocity/nsif/ooi-ce07shsm-rid26-01-adcpta000_dad4_820b_2d26.nc', decode_times=True)
+    out_dir = Ldir['parent']+'/LKH_data/OOI/CE/coastal_moorings/CE07SHSM/velocity/nsif'
 elif loco == 'mfd':
-    ds = xr.open_dataset('/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE07SHSM/velocity/mfd/ooi-ce07shsm-mfd35-04-adcptc000_dad4_820b_2d26.nc', decode_times=True)
-    out_dir = '/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE07SHSM/velocity/mfd'
+    ds = xr.open_dataset(Ldir['parent']+'/LKH_data/OOI/CE/coastal_moorings/CE07SHSM/velocity/mfd/ooi-ce07shsm-mfd35-04-adcptc000_dad4_820b_2d26.nc', decode_times=True)
+    out_dir = Ldir['parent']+'/LKH_data/OOI/CE/coastal_moorings/CE07SHSM/velocity/mfd'
 
 if os.path.exists(out_dir)==False:
     Lfun.make_dir(out_dir, clean = False)
