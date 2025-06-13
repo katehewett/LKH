@@ -14,6 +14,9 @@ ooi-ce09ossm-rid26-01-adcptc000_dad4_820b_2d26.nc
 
 this is ugly inflexible code, improve later :O
 Altered to speed up post 8JUne2025
+it's because i put np.nanmean instead of mean in binned statistic. 
+Re-wrote code and took out nan's before binned stat. 
+Will deal with w later
 '''
 
 import sys
@@ -88,7 +91,7 @@ df['date'] = df['datetimes'].dt.date
 df['z'] = ds.z.values
 df['u'] = ds.eastward_sea_water_velocity.values
 df['v'] = ds.northward_sea_water_velocity.values
-df['w'] = ds.upward_sea_water_velocity.values
+#df['w'] = ds.upward_sea_water_velocity.values
 df['e'] = ds.velprof_evl.values
 
 #################################################################################################
@@ -97,7 +100,7 @@ print('filtering error terms')
 df['Econdition'] = abs(df['e']) > error_threshold 
 df.loc[df['Econdition'],'u'] = np.nan # take all the u rows where Econdition == True and set to nan
 df.loc[df['Econdition'],'v'] = np.nan
-df.loc[df['Econdition'],'w'] = np.nan # error is for u,v, but flagging w. not sure what's best here...
+#df.loc[df['Econdition'],'w'] = np.nan # error is for u,v, but flagging w. not sure what's best here...
 df.loc[df['Econdition'],'e'] = np.nan
 
 #################################################################################################
@@ -139,6 +142,7 @@ VH = vhigh[Vbin]
 VL = vlow[Vbin]
 Vcondition = (df['v']<VL) | (df['v']>VH)
 
+'''
 # Calc W outliers 
 print('calc w outliers...')
 Wmean, bin_edges, binnumber = stats.binned_statistic(df['z'], df['w'], statistic=np.nanmean, bins=binedges)
@@ -150,23 +154,46 @@ Wbin = binnumber-1
 WH = whigh[Wbin]
 WL = wlow[Wbin]
 Wcondition = (df['w']<WL) | (df['w']>WH)
+'''
 
 print('setting outliers to nan...')
 df['UVcondition'] = Ucondition | Vcondition
-df['Wcondition'] = Wcondition
+#df['Wcondition'] = Wcondition
 
 # if flag in u,v then uvw = nan
 df.loc[df['UVcondition'],'u'] = np.nan
 df.loc[df['UVcondition'],'v'] = np.nan
 df.loc[df['UVcondition'],'w'] = np.nan
 # flag outliers in w
-df.loc[df['Wcondition'],'w'] = np.nan
+#df.loc[df['Wcondition'],'w'] = np.nan
+
+# 'mean' goes WAY WAY faster than np.nan in binned.statistic. So will drop nan's from df here before grouping:
+df2 = df.copy()
+#columns_to_drop = ['UVcondition', 'Econdition', 'Wcondition','index']
+columns_to_drop = ['UVcondition', 'Econdition', 'index']
+df2 = df2.drop(columns_to_drop,axis=1)
+NU=np.where(np.isnan(df2['u']))
+NV=np.where(np.isnan(df2['v']))
+if np.all(NU[0]==NV[0]): 
+    print('okay')
+df2.drop(index=NU[0],axis=0,inplace=True) #doens't return a new df
+df2 = df2.reset_index()
+columns_to_drop = ['index']
+df2 = df2.drop(columns_to_drop,axis=1)
+
+'''
+NW = np.where(np.isnan(df2['w']))
+columns_to_drop = ['u', 'v', 'e','index']
+dfw = df2.drop(index=NW[0],axis=0,inplace=False) # returns a new df, named dfw
+dfw.reset_index(inplace=True)
+dfw = dfw.drop(columns_to_drop,axis=1)
+'''
 
 ###############################################################################################################################
 ###############################################################################################################################
 # group by timestamps 
 print('grouping by timestamp...')
-Zgroup = df.groupby('datetimes')['z'].apply(list).reset_index(name='z')  
+Zgroup = df2.groupby('datetimes')['z'].apply(list).reset_index(name='z')  
 # check timestamps for duplicate entries
 duplicates = Zgroup.duplicated(subset='datetimes')
 if np.all(~duplicates):
@@ -175,14 +202,18 @@ elif np.any(duplicates):
     print('duplicates in time')
     sys.exit()
 
-Ugroup = df.groupby('datetimes')['u'].apply(list).reset_index(name='u')
+Ugroup = df2.groupby('datetimes')['u'].apply(list).reset_index(name='u')
 print('grouped u')
-Vgroup = df.groupby('datetimes')['v'].apply(list).reset_index(name='v')
+Vgroup = df2.groupby('datetimes')['v'].apply(list).reset_index(name='v')
 print('grouped v')
-Wgroup = df.groupby('datetimes')['w'].apply(list).reset_index(name='w')
-print('grouped w')
-Egroup = df.groupby('datetimes')['e'].apply(list).reset_index(name='e')
+Egroup = df2.groupby('datetimes')['e'].apply(list).reset_index(name='e')
 print('grouped error')
+
+'''
+Zwgroup = dfw.groupby('datetimes')['z'].apply(list).reset_index(name='z') 
+Wgroup = dfw.groupby('datetimes')['w'].apply(list).reset_index(name='w')
+print('grouped w')
+'''
 
 ###############################################################################################################################
 '''
@@ -231,8 +262,8 @@ sys.exit()
 print('gridding data ...')
 if loco == 'mfd':
     Zcenter = np.arange(-85,-24,1)  # originally went to 
-    binedges = Zcenter-0.5
-    binedges = np.append(binedges,binedges[-1]+1)
+    binedges = Zcenter-2.5
+    binedges = np.append(binedges,binedges[-1]+5)
 
 if loco == 'nsif':
     Zcenter2 = np.arange(-55,-7,1)  
@@ -248,20 +279,13 @@ print('NTc: '+str(NTc))
 zb = np.ones([NTc,NZc])*np.nan
 ub = np.ones([NTc,NZc])*np.nan
 vb = np.ones([NTc,NZc])*np.nan
-wb = np.ones([NTc,NZc])*np.nan
+#wb = np.ones([NTc,NZc])*np.nan
 eb = np.ones([NTc,NZc])*np.nan
 
-# update: put UVWE new if filter before hand 
-Zgroup = df.groupby('datetimes')['z'].apply(list).reset_index(name='z')
-Ugroup = df.groupby('datetimes')['u'].apply(list).reset_index(name='u')
-Vgroup = df.groupby('datetimes')['v'].apply(list).reset_index(name='v')
-Wgroup = df.groupby('datetimes')['w'].apply(list).reset_index(name='w')
-Egroup = df.groupby('datetimes')['e'].apply(list).reset_index(name='e')
-
-for idx in range(15):
+for idx in range(NTc):
     ui = Ugroup['u'][idx] 
     vi = Vgroup['v'][idx] 
-    wi = Wgroup['w'][idx] 
+    #wi = Wgroup['w'][idx] 
     ei = Egroup['e'][idx] 
     zi = Zgroup['z'][idx] 
 
@@ -274,13 +298,13 @@ for idx in range(15):
         warnings.simplefilter("ignore", category=RuntimeWarning)
         ustat, bin_edges, binnumber = stats.binned_statistic(zi, ui, statistic='mean', bins=binedges)
         vstat, bin_edges, binnumber = stats.binned_statistic(zi, vi, statistic='mean', bins=binedges)
-        wstat, bin_edges, binnumber = stats.binned_statistic(zi, wi, statistic='mean', bins=binedges)
+        #wstat, bin_edges, binnumber = stats.binned_statistic(zi, wi, statistic='mean', bins=binedges)
         estat, bin_edges, binnumber = stats.binned_statistic(zi, ei, statistic='mean', bins=binedges)
 
     zb[idx,:] = Zcenter # just a checker
     ub[idx,:] = ustat
     vb[idx,:] = vstat
-    wb[idx,:] = wstat
+    #wb[idx,:] = wstat
     eb[idx,:] = estat
 
     #plt.plot(ui,zi,'bo-')
@@ -303,22 +327,22 @@ ADCP['u'] = (('ocean_time','z'), ub, {'units':'m.s-1', 'long_name': 'OOI Eastwar
                                       'metadata link':'https://mmisw.org/ont/cf/parameter/eastward_sea_water_velocity'})
 ADCP['v'] = (('ocean_time','z'), vb, {'units':'m.s-1', 'long_name': 'OOI Northward Sea Water Velocity','positive':'northward',
                                       'metadata link':'http://mmisw.org/ont/cf/parameter/northward_sea_water_velocity'})
-ADCP['w'] = (('ocean_time','z'), wb, {'units':'m.s-1', 'long_name': 'Upward Sea Water Velocity','positive':'upward',
-                                      'metadata link':'http://mmisw.org/ont/cf/parameter/upward_sea_water_velocity'})
+#ADCP['w'] = (('ocean_time','z'), wb, {'units':'m.s-1', 'long_name': 'Upward Sea Water Velocity','positive':'upward',
+#                                      'metadata link':'http://mmisw.org/ont/cf/parameter/upward_sea_water_velocity'})
 ADCP['velprof'] = (('ocean_time','z'), eb, {'units':'m.s-1', 'long_name': 'Error Seawater Velocity detail link broken','positive':'unclear',
                                       'metadata link':'BROKEN: https://mmisw.org/ont/cf/parameter/VELPROF-EVL'})
 
 if loco == 'nsif':
     ADCP['u'].attrs['moored_location'] = 'nsif ~7m below surface'
     ADCP['v'].attrs['moored_location'] = 'nsif ~7m below surface'
-    ADCP['w'].attrs['moored_location'] = 'nsif ~7m below surface'
+    #ADCP['w'].attrs['moored_location'] = 'nsif ~7m below surface'
     print('nsif: ' + loco)
     fn_o = posixpath.join(out_dir , str(moor) + '_nsif_ADCP.nc')
 
 if loco == 'mfd':
     ADCP['u'].attrs['moored_location'] = 'mfd, depth ~540m'
     ADCP['v'].attrs['moored_location'] = 'mfd, depth ~540m'
-    ADCP['w'].attrs['moored_location'] = 'mfd, depth ~540m'
+    #ADCP['w'].attrs['moored_location'] = 'mfd, depth ~540m'
     print('mfd: ' + loco)
     fn_o = posixpath.join(out_dir , str(moor) + '_mfd_ADCP.nc')
 
