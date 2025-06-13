@@ -1,6 +1,8 @@
 '''
-following CE07SHSM, update readme and code 
-fix w later
+Following CE07SHSM
+TODO: 
+update readme and text 
+save w seperately to eval after 13 june mtg 
 
 '''
 
@@ -38,11 +40,18 @@ def find_duplicate_indices(list_):
 
 error_threshold = 0.1
 
-moor = 'CE06ISSM'
-loco = 'mfd'
+moor = 'CE09OSSM'
+#loco = 'mfd'
+loco = 'nsif'
 
 in_dir = Ldir['parent'] / 'LKH_data' / 'OOI' / 'CE' / 'coastal_moorings' / moor / 'velocity' / loco 
-fn_in = posixpath.join(in_dir, 'ooi-ce06issm-mfd35-04-adcptm000_dad4_820b_2d26.nc') 
+
+if loco == 'nsif':
+    fn_in = posixpath.join(in_dir, 'ooi-ce07shsm-rid26-01-adcpta000_dad4_820b_2d26.nc') 
+
+if loco == 'mfd':
+    fn_in = posixpath.join(in_dir, 'ooi-ce07shsm-mfd35-04-adcptc000_dad4_820b_2d26.nc') 
+
 ds = xr.open_dataset(fn_in, decode_times=True)
 
 out_dir = Ldir['parent'] / 'LKH_data'/'OOI'/'CE'/'coastal_moorings'/moor/'velocity'/loco
@@ -83,12 +92,15 @@ df.loc[df['Econdition'],'e'] = np.nan
 
 #################################################################################################
 # Want to drop some data here to make the arrays smaller:
-# (1) weird OOI flags had a few timestamps with entire WC was shifted downward (below sensor depth). 
+# (1) weird OOI flags had a few timestamps with entire WC was shifted upwards. 
+# clipping everything above -6m would remove those values here (rows dropped = 631) 
+# That clip (-6m) also removed the duplicate zgroups per timestamp for CE07SHSM nsif
 # (2) Since we're later going to clip at a surfacemost (and bottommost) binedge(s),
-# we skipped a step and jumped to clip below -85m Zcenter[0] and -25m,Zcenter[0]
-Zcenter = np.arange(-29,-4,1)  # originally went to 
-binedges = Zcenter-0.5
-binedges = np.append(binedges,binedges[-1]+1)
+# we skipped a step and jumped to clip below -7.5m (instead of -6m) binedges[-1] and 
+# -57.5m,binedges[0], which removes the deep (below -89m bins) present early in the timeseries
+Zcenter = np.arange(-55,-9,5)  # originally went to 
+binedges = Zcenter-2.5
+binedges = np.append(binedges,binedges[-1]+5)
 
 df.drop(df.loc[df['z']>binedges[-1]].index,inplace=True)
 df.drop(df.loc[df['z']<binedges[0]].index,inplace=True)
@@ -171,7 +183,7 @@ dfw = dfw.drop(columns_to_drop,axis=1)
 ###############################################################################################################################
 # group by timestamps 
 print('grouping by timestamp...')
-Zgroup = df2.groupby('datetimes')['z'].apply(list).reset_index(name='z')  
+Zgroup = df.groupby('datetimes')['z'].apply(list).reset_index(name='z')  
 # check timestamps for duplicate entries
 duplicates = Zgroup.duplicated(subset='datetimes')
 if np.all(~duplicates):
@@ -180,11 +192,11 @@ elif np.any(duplicates):
     print('duplicates in time')
     sys.exit()
 
-Ugroup = df2.groupby('datetimes')['u'].apply(list).reset_index(name='u')
+Ugroup = df.groupby('datetimes')['u'].apply(list).reset_index(name='u')
 print('grouped u')
-Vgroup = df2.groupby('datetimes')['v'].apply(list).reset_index(name='v')
+Vgroup = df.groupby('datetimes')['v'].apply(list).reset_index(name='v')
 print('grouped v')
-Egroup = df2.groupby('datetimes')['e'].apply(list).reset_index(name='e')
+Egroup = df.groupby('datetimes')['e'].apply(list).reset_index(name='e')
 print('grouped error')
 
 '''
@@ -238,9 +250,15 @@ sys.exit()
 ###############################################################################################################################
 #grid data 
 print('gridding data ...')
-Zcenter = np.arange(-29,-4,1)  # originally went to 
-binedges = Zcenter-0.5
-binedges = np.append(binedges,binedges[-1]+1)
+if loco == 'mfd':
+    Zcenter = np.arange(-85,-24,1)  # originally went to 
+    binedges = Zcenter-2.5
+    binedges = np.append(binedges,binedges[-1]+5)
+
+if loco == 'nsif':
+    Zcenter = np.arange(-55,-7,1)  
+    binedges = Zcenter-0.5
+    binedges = np.append(binedges,binedges[-1]+1)
 
 NZc = np.shape(Zcenter)[0]
 NTc = np.shape(Zgroup['datetimes'].unique())[0]
@@ -254,7 +272,7 @@ vb = np.ones([NTc,NZc])*np.nan
 #wb = np.ones([NTc,NZc])*np.nan
 eb = np.ones([NTc,NZc])*np.nan
 
-for idx in range(NTc):
+for idx in range(15):
     ui = Ugroup['u'][idx] 
     vi = Vgroup['v'][idx] 
     #wi = Wgroup['w'][idx] 
@@ -333,11 +351,8 @@ plt.rc('font', size=fs)
 fig = plt.figure(figsize=(18,10))
 fig.set_size_inches(18,10, forward=False)
 
-Emean, bin_edges, binnumber = stats.binned_statistic(df['z'], df['e'], statistic=np.nanmean, bins=binedges)
-Estd, bin_edges, binnumber = stats.binned_statistic(df['z'], df['e'], statistic=np.nanstd, bins=binedges)
-
 ax = plt.subplot2grid((4,4), (0,0), colspan=1,rowspan=4)
-plt.plot(df['e'],df['z'],'b.')
+plt.plot(df['velprof'],df['z'],'b.')
 plt.plot(Emean,Zcenter,color = 'grey',marker='none',linestyle='-',linewidth=2,alpha=0.8,label ='Emean')
 plt.axvline(x=0.1, color='r', linestyle='--')
 plt.axvline(x=-0.1, color='r', linestyle='--')

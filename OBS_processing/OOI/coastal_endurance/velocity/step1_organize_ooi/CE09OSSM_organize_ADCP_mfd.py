@@ -1,19 +1,9 @@
 '''
-First step for CE07SHSM
+Following CE07SHSM
+TODO: 
+update readme and text 
+save w seperately to eval after 13 june mtg 
 
-This code is to process data from OOI for the WA surface mooring velocity data.
-
-The ADCP data has already been binned by OOI/Axiom and is provides u,v,w (and error, see README)
-Upward facing on MFD; downward NSIF
-
-'/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE07SHSM/velocity/mfd'
-ooi-ce09ossm-mfd35-04-adcpsj000_ff2d_359a_11eb.nc
-
-'/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE09OSSM/velocity/nsif'
-ooi-ce09ossm-rid26-01-adcptc000_dad4_820b_2d26.nc
-
-this is ugly inflexible code, improve later :O
-Altered to speed up post 8JUne2025
 '''
 
 import sys
@@ -50,17 +40,17 @@ def find_duplicate_indices(list_):
 
 error_threshold = 0.1
 
-moor = 'CE07SHSM'
-#loco = 'mfd'
-loco = 'nsif'
+moor = 'CE09OSSM'
+loco = 'mfd'
+#loco = 'nsif'
 
 in_dir = Ldir['parent'] / 'LKH_data' / 'OOI' / 'CE' / 'coastal_moorings' / moor / 'velocity' / loco 
 
 if loco == 'nsif':
-    fn_in = posixpath.join(in_dir, 'ooi-ce07shsm-rid26-01-adcpta000_dad4_820b_2d26.nc') 
+    fn_in = posixpath.join(in_dir, 'ooi-ce09ossm-rid26-01-adcptc000_dad4_820b_2d26.nc') 
 
 if loco == 'mfd':
-    fn_in = posixpath.join(in_dir, 'ooi-ce07shsm-mfd35-04-adcptc000_dad4_820b_2d26.nc') 
+    fn_in = posixpath.join(in_dir, 'ooi-ce09ossm-mfd35-04-adcpsj000_ff2d_359a_11eb.nc') 
 
 ds = xr.open_dataset(fn_in, decode_times=True)
 
@@ -100,17 +90,149 @@ df.loc[df['Econdition'],'v'] = np.nan
 #df.loc[df['Econdition'],'w'] = np.nan # error is for u,v, but flagging w. not sure what's best here...
 df.loc[df['Econdition'],'e'] = np.nan
 
+if loco == 'mfd':
+    a_datetime = datetime(2015, 5, 2, 16, 00, 0) # clipping profiles before this time (suspect)
+    idx_to_drop = df[(df['datetimes'] < a_datetime)].index 
+    df = df.drop(idx_to_drop, inplace=False)
+
+######################################################################################################
+# group by timestamps 
+print('grouping by timestamp...')
+Zgroup = df.groupby('datetimes')['z'].apply(list).reset_index(name='z')  
+# check timestamps for duplicate entries
+duplicates = Zgroup.duplicated(subset='datetimes')
+if np.all(~duplicates):
+    print('no duplicate timestamps')
+elif np.any(duplicates): 
+    print('duplicates in time')
+    sys.exit()
+
+#mfd drop if the ...
+#min z is deeper than 540m  
+#min z doesn't reach deeper than 495m 
+#max z is shallower than -100m drop
+if loco == 'mfd':
+    Zgroup['Zmin'] = Zgroup.apply(lambda row: np.nanmin(row['z']), axis=1)
+    Zgroup['Zmax'] = Zgroup.apply(lambda row: np.nanmax(row['z']), axis=1)
+    idx2_to_drop = Zgroup[(Zgroup['Zmin'] < -540) | (Zgroup['Zmin'] > -495) | (Zgroup['Zmax'] < -100)].index 
+    Zgroup = Zgroup.drop(idx2_to_drop, inplace=False)
+
+Ugroup = df.groupby('datetimes')['u'].apply(list).reset_index(name='u')
+print('ugrouped')
+Vgroup = df.groupby('datetimes')['v'].apply(list).reset_index(name='v')
+print('vgrouped')
+#Wgroup = df.groupby('datetimes')['w'].apply(list).reset_index(name='w')
+#print('wgrouped')
+Egroup = df.groupby('datetimes')['e'].apply(list).reset_index(name='e')
+print('egrouped')
+
+if loco == 'mfd':
+    Ugroup = Ugroup.drop(idx2_to_drop, inplace=False)
+    Vgroup = Vgroup.drop(idx2_to_drop, inplace=False)
+    #Wgroup = Wgroup.drop(idx2_to_drop, inplace=False)
+    Egroup = Egroup.drop(idx2_to_drop, inplace=False)
+
+###############################################################################################################################
+# We know there are a lot of instances where velocities thru the water column
+# are repeated 2x for one timestamp. The next several lines of code will:
+# 1 - remove duplicates, and 2 - grab indicies of duplicates
+# This isn't super fast, TODO: find a way to speed up the search. 
+print('identifying duplicates in z group ...')
+
+Zgroup_copy = Zgroup.copy()
+Zgroup_copy['dup_ind']=Zgroup_copy['z'].apply(find_duplicate_indices)
+Zgroup_copy['has_duplicates'] = Zgroup_copy['dup_ind'].apply(lambda x: len(x) > 0)
+
+print('removing duplicates in z ...')
+Zgroup_copy['new_value'] = Zgroup_copy.apply(lambda row: np.array(row['z'])[row['dup_ind']] if row['has_duplicates'] else np.array(row['z']), axis=1)
+
+print('removing duplicates in u ...')
+Ugroup_copy = Ugroup.copy()
+Ugroup_copy['dup_ind']=Zgroup_copy['dup_ind'].copy()
+Ugroup_copy['has_duplicates'] = Zgroup_copy['has_duplicates'].copy()
+Ugroup_copy['new_value'] = Ugroup_copy.apply(lambda row: np.array(row['u'])[row['dup_ind']] if row['has_duplicates'] else np.array(row['u']), axis=1)
+
+print('removing duplicates in v ...')
+Vgroup_copy = Vgroup.copy()
+Vgroup_copy['dup_ind']=Zgroup_copy['dup_ind'].copy()
+Vgroup_copy['has_duplicates'] = Zgroup_copy['has_duplicates'].copy()
+Vgroup_copy['new_value'] = Vgroup_copy.apply(lambda row: np.array(row['v'])[row['dup_ind']] if row['has_duplicates'] else np.array(row['v']), axis=1)
+
+'''
+print('removing duplicates in w ...')
+Wgroup_copy = Wgroup.copy()
+Wgroup_copy['dup_ind']=Zgroup_copy['dup_ind'].copy()
+Wgroup_copy['has_duplicates'] = Zgroup_copy['has_duplicates'].copy()
+Wgroup_copy['new_value'] = Wgroup_copy.apply(lambda row: np.array(row['w'])[row['dup_ind']] if row['has_duplicates'] else np.array(row['w']), axis=1)
+'''
+
+print('removing duplicates in e ...')
+Egroup_copy = Egroup.copy()
+Egroup_copy['dup_ind']=Zgroup_copy['dup_ind'].copy()
+Egroup_copy['has_duplicates'] = Zgroup_copy['has_duplicates'].copy()
+Egroup_copy['new_value'] = Egroup_copy.apply(lambda row: np.array(row['e'])[row['dup_ind']] if row['has_duplicates'] else np.array(row['e']), axis=1)
+
+###############################################################################################################################
+# we're going to flatten these 
+print('flattening dataframe ...')
+Zgroup_copy = Zgroup_copy.reset_index()
+Ugroup_copy = Ugroup_copy.reset_index()
+Vgroup_copy = Vgroup_copy.reset_index()
+#Wgroup_copy = Wgroup_copy.reset_index()
+Egroup_copy = Egroup_copy.reset_index()
+
+if loco == 'mfd':
+    Z = pd.DataFrame({'datetimes':Zgroup_copy['datetimes'],'z':Zgroup_copy['new_value']})
+    U = pd.DataFrame({'datetimes':Ugroup_copy['datetimes'],'u':Ugroup_copy['new_value']})
+    V = pd.DataFrame({'datetimes':Vgroup_copy['datetimes'],'v':Vgroup_copy['new_value']})
+    #W = pd.DataFrame({'datetimes':Wgroup_copy['datetimes'],'w':Wgroup_copy['new_value']})
+    E = pd.DataFrame({'datetimes':Egroup_copy['datetimes'],'e':Egroup_copy['new_value']})
+
+Zflatdata = pd.DataFrame([(index, value) for (index, values)
+                         in Z['z'].items() for value in values],
+                             columns = ['index','z']).set_index('index')
+Z = Z.drop('z', axis=1).join(Zflatdata)
+Z = Z.set_index('datetimes')
+
+Uflatdata = pd.DataFrame([(index, value) for (index, values)
+                         in U['u'].items() for value in values],
+                             columns = ['index','u']).set_index('index')
+U = U.drop('u', axis=1).join(Uflatdata)
+U = U.set_index('datetimes')
+
+Vflatdata = pd.DataFrame([(index, value) for (index, values)
+                         in V['v'].items() for value in values],
+                             columns = ['index','v']).set_index('index')
+V = V.drop('v', axis=1).join(Vflatdata)
+V = V.set_index('datetimes')
+'''
+Wflatdata = pd.DataFrame([(index, value) for (index, values)
+                         in W['W'].items() for value in values],
+                             columns = ['index','W']).set_index('index')
+W = W.drop('w', axis=1).join(Wflatdata)
+'''
+Eflatdata = pd.DataFrame([(index, value) for (index, values)
+                         in E['e'].items() for value in values],
+                             columns = ['index','e']).set_index('index')
+E = E.drop('e', axis=1).join(Eflatdata)
+E = E.set_index('datetimes')
+
+del df 
+df = pd.concat([Z,U,V,E],axis=1)
+df = df.reset_index()
+df['date'] = df['datetimes'].dt.date
+
 #################################################################################################
-# Want to drop some data here to make the arrays smaller:
-# (1) weird OOI flags had a few timestamps with entire WC was shifted upwards. 
-# clipping everything above -6m would remove those values here (rows dropped = 631) 
-# That clip (-6m) also removed the duplicate zgroups per timestamp for CE07SHSM nsif
-# (2) Since we're later going to clip at a surfacemost (and bottommost) binedge(s),
-# we skipped a step and jumped to clip below -7.5m (instead of -6m) binedges[-1] and 
-# -57.5m,binedges[0], which removes the deep (below -89m bins) present early in the timeseries
-Zcenter = np.arange(-55,-9,5)  # originally went to 
-binedges = Zcenter-2.5
-binedges = np.append(binedges,binedges[-1]+5)
+# dropping some data 
+if loco == 'mfd':
+    Zcenter = np.arange(-530,-49,15)  
+    binedges = Zcenter-7.5
+    binedges = np.append(binedges,binedges[-1]+15)
+
+if loco == 'nsif':
+    Zcenter = np.arange(-95,-14,5) 
+    binedges = Zcenter-2.5
+    binedges = np.append(binedges,binedges[-1]+5)
 
 df.drop(df.loc[df['z']>binedges[-1]].index,inplace=True)
 df.drop(df.loc[df['z']<binedges[0]].index,inplace=True)
@@ -170,7 +292,7 @@ df.loc[df['UVcondition'],'w'] = np.nan
 # 'mean' goes WAY WAY faster than np.nan in binned.statistic. So will drop nan's from df here before grouping:
 df2 = df.copy()
 #columns_to_drop = ['UVcondition', 'Econdition', 'Wcondition','index']
-columns_to_drop = ['UVcondition', 'Econdition', 'index']
+columns_to_drop = ['UVcondition', 'index']
 df2 = df2.drop(columns_to_drop,axis=1)
 NU=np.where(np.isnan(df2['u']))
 NV=np.where(np.isnan(df2['v']))
@@ -194,14 +316,7 @@ dfw = dfw.drop(columns_to_drop,axis=1)
 # group by timestamps 
 print('grouping by timestamp...')
 Zgroup = df.groupby('datetimes')['z'].apply(list).reset_index(name='z')  
-# check timestamps for duplicate entries
-duplicates = Zgroup.duplicated(subset='datetimes')
-if np.all(~duplicates):
-    print('no duplicate timestamps')
-elif np.any(duplicates): 
-    print('duplicates in time')
-    sys.exit()
-
+print('grouped z')
 Ugroup = df.groupby('datetimes')['u'].apply(list).reset_index(name='u')
 print('grouped u')
 Vgroup = df.groupby('datetimes')['v'].apply(list).reset_index(name='v')
@@ -214,59 +329,16 @@ Zwgroup = dfw.groupby('datetimes')['z'].apply(list).reset_index(name='z')
 Wgroup = dfw.groupby('datetimes')['w'].apply(list).reset_index(name='w')
 print('grouped w')
 '''
-
-###############################################################################################################################
-'''
-# We know there are a lot of instances where velocities thru the water column
-# are repeated 2x for one timestamp. The next several lines of code will:
-# 1 - remove duplicates, and 2 - grab indicies of duplicates
-# This isn't super fast, TODO: find a way to speed up the search. 
-print('identifying duplicates in z group ...')
-
-Zgroup_copy = Zgroup.copy()
-Zgroup_copy['dup_ind']=Zgroup_copy['z'].apply(find_duplicate_indices)
-Zgroup_copy['has_duplicates'] = Zgroup_copy['dup_ind'].apply(lambda x: len(x) > 0)
-
-print('removing duplicates in z ...')
-Zgroup_copy['new_value'] = Zgroup_copy.apply(lambda row: np.array(row['z'])[row['dup_ind']] if row['has_duplicates'] else np.array(row['z']), axis=1)
-
-print('removing duplicates in u ...')
-Ugroup_copy = Ugroup.copy()
-Ugroup_copy['dup_ind']=Zgroup_copy['dup_ind'].copy()
-Ugroup_copy['has_duplicates'] = Zgroup_copy['has_duplicates'].copy()
-Ugroup_copy['new_value'] = Ugroup_copy.apply(lambda row: np.array(row['u'])[row['dup_ind']] if row['has_duplicates'] else np.array(row['u']), axis=1)
-
-print('removing duplicates in v ...')
-Vgroup_copy = Vgroup.copy()
-Vgroup_copy['dup_ind']=Zgroup_copy['dup_ind'].copy()
-Vgroup_copy['has_duplicates'] = Zgroup_copy['has_duplicates'].copy()
-Vgroup_copy['new_value'] = Vgroup_copy.apply(lambda row: np.array(row['v'])[row['dup_ind']] if row['has_duplicates'] else np.array(row['v']), axis=1)
-
-print('removing duplicates in w ...')
-Wgroup_copy = Wgroup.copy()
-Wgroup_copy['dup_ind']=Zgroup_copy['dup_ind'].copy()
-Wgroup_copy['has_duplicates'] = Zgroup_copy['has_duplicates'].copy()
-Wgroup_copy['new_value'] = Wgroup_copy.apply(lambda row: np.array(row['w'])[row['dup_ind']] if row['has_duplicates'] else np.array(row['w']), axis=1)
-
-print('removing duplicates in velprof ...')
-Egroup_copy = Egroup.copy()
-Egroup_copy['dup_ind']=Zgroup_copy['dup_ind'].copy()
-Egroup_copy['has_duplicates'] = Zgroup_copy['has_duplicates'].copy()
-Egroup_copy['new_value'] = Egroup_copy.apply(lambda row: np.array(row['velprof'])[row['dup_ind']] if row['has_duplicates'] else np.array(row['velprof']), axis=1)
-
-
-sys.exit()
-'''
 ###############################################################################################################################
 #grid data 
 print('gridding data ...')
 if loco == 'mfd':
-    Zcenter = np.arange(-85,-24,1)  # originally went to 
-    binedges = Zcenter-2.5
-    binedges = np.append(binedges,binedges[-1]+5)
+    Zcenter = np.arange(-530,-49,1)  # originally went to 
+    binedges = Zcenter-0.5
+    binedges = np.append(binedges,binedges[-1]+1)
 
 if loco == 'nsif':
-    Zcenter = np.arange(-55,-7,1)  
+    Zcenter = np.arange(-95,-14,1) 
     binedges = Zcenter-0.5
     binedges = np.append(binedges,binedges[-1]+1)
 
