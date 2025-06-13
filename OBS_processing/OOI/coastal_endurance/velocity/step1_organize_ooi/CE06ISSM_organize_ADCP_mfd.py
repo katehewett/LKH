@@ -1,22 +1,7 @@
 '''
-First step for CE07SHSM
+following CE07SHSM, update readme and code 
+fix w later
 
-This code is to process data from OOI for the WA surface mooring velocity data.
-
-The ADCP data has already been binned by OOI/Axiom and is provides u,v,w (and error, see README)
-Upward facing on MFD; downward NSIF
-
-'/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE07SHSM/velocity/mfd'
-ooi-ce09ossm-mfd35-04-adcpsj000_ff2d_359a_11eb.nc
-
-'/Users/katehewett/Documents/LKH_data/OOI/CE/coastal_moorings/CE09OSSM/velocity/nsif'
-ooi-ce09ossm-rid26-01-adcptc000_dad4_820b_2d26.nc
-
-this is ugly inflexible code, improve later :O
-Altered to speed up post 8JUne2025
-it's because i put np.nanmean instead of mean in binned statistic. 
-Re-wrote code and took out nan's before binned stat. 
-Will deal with w later
 '''
 
 import sys
@@ -53,18 +38,11 @@ def find_duplicate_indices(list_):
 
 error_threshold = 0.1
 
-moor = 'CE07SHSM'
+moor = 'CE06ISSM'
 loco = 'mfd'
-#loco = 'nsif'
 
 in_dir = Ldir['parent'] / 'LKH_data' / 'OOI' / 'CE' / 'coastal_moorings' / moor / 'velocity' / loco 
-
-if loco == 'nsif':
-    fn_in = posixpath.join(in_dir, 'ooi-ce07shsm-rid26-01-adcpta000_dad4_820b_2d26.nc') 
-
-if loco == 'mfd':
-    fn_in = posixpath.join(in_dir, 'ooi-ce07shsm-mfd35-04-adcptc000_dad4_820b_2d26.nc') 
-
+fn_in = posixpath.join(in_dir, 'ooi-ce06issm-mfd35-04-adcptm000_dad4_820b_2d26.nc') 
 ds = xr.open_dataset(fn_in, decode_times=True)
 
 out_dir = Ldir['parent'] / 'LKH_data'/'OOI'/'CE'/'coastal_moorings'/moor/'velocity'/loco
@@ -108,9 +86,9 @@ df.loc[df['Econdition'],'e'] = np.nan
 # (1) weird OOI flags had a few timestamps with entire WC was shifted downward (below sensor depth). 
 # (2) Since we're later going to clip at a surfacemost (and bottommost) binedge(s),
 # we skipped a step and jumped to clip below -85m Zcenter[0] and -25m,Zcenter[0]
-Zcenter = np.arange(-85,-24,5)  # originally went to 
-binedges = Zcenter-2.5
-binedges = np.append(binedges,binedges[-1]+5)
+Zcenter = np.arange(-29,-4,1)  # originally went to 
+binedges = Zcenter-0.5
+binedges = np.append(binedges,binedges[-1]+1)
 
 df.drop(df.loc[df['z']>binedges[-1]].index,inplace=True)
 df.drop(df.loc[df['z']<binedges[0]].index,inplace=True)
@@ -260,15 +238,9 @@ sys.exit()
 ###############################################################################################################################
 #grid data 
 print('gridding data ...')
-if loco == 'mfd':
-    Zcenter = np.arange(-85,-24,1)  # originally went to 
-    binedges = Zcenter-2.5
-    binedges = np.append(binedges,binedges[-1]+5)
-
-if loco == 'nsif':
-    Zcenter = np.arange(-55,-7,1)  
-    binedges = Zcenter-0.5
-    binedges = np.append(binedges,binedges[-1]+1)
+Zcenter = np.arange(-29,-4,1)  # originally went to 
+binedges = Zcenter-0.5
+binedges = np.append(binedges,binedges[-1]+1)
 
 NZc = np.shape(Zcenter)[0]
 NTc = np.shape(Zgroup['datetimes'].unique())[0]
