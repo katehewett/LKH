@@ -51,8 +51,8 @@ def find_duplicate_indices(list_):
 error_threshold = 0.1
 
 moor = 'CE07SHSM'
-#loco = 'mfd'
-loco = 'nsif'
+loco = 'mfd'
+#loco = 'nsif'
 
 in_dir = Ldir['parent'] / 'LKH_data' / 'OOI' / 'CE' / 'coastal_moorings' / moor / 'velocity' / loco 
 
@@ -102,13 +102,10 @@ df.loc[df['Econdition'],'e'] = np.nan
 
 #################################################################################################
 # Want to drop some data here to make the arrays smaller:
-# (1) weird OOI flags had a few timestamps with entire WC was shifted upwards. 
-# clipping everything above -6m would remove those values here (rows dropped = 631) 
-# That clip (-6m) also removed the duplicate zgroups per timestamp for CE07SHSM nsif
+# (1) weird OOI flags had a few timestamps with entire WC was shifted downward (below sensor depth). 
 # (2) Since we're later going to clip at a surfacemost (and bottommost) binedge(s),
-# we skipped a step and jumped to clip below -7.5m (instead of -6m) binedges[-1] and 
-# -57.5m,binedges[0], which removes the deep (below -89m bins) present early in the timeseries
-Zcenter = np.arange(-55,-9,5)  # originally went to 
+# we skipped a step and jumped to clip below -85m Zcenter[0] and -25m,Zcenter[0]
+Zcenter = np.arange(-85,-24,5)  # originally went to 
 binedges = Zcenter-2.5
 binedges = np.append(binedges,binedges[-1]+5)
 
@@ -233,9 +230,9 @@ sys.exit()
 #grid data 
 print('gridding data ...')
 if loco == 'mfd':
-    Zcenter = np.arange(-80,-9,5)  # originally went to 
-    binedges = Zcenter-2.5
-    binedges = np.append(binedges,binedges[-1]+5)
+    Zcenter = np.arange(-85,-24,1)  # originally went to 
+    binedges = Zcenter-0.5
+    binedges = np.append(binedges,binedges[-1]+1)
 
 if loco == 'nsif':
     Zcenter2 = np.arange(-55,-7,1)  
@@ -340,8 +337,11 @@ plt.rc('font', size=fs)
 fig = plt.figure(figsize=(18,10))
 fig.set_size_inches(18,10, forward=False)
 
+Emean, bin_edges, binnumber = stats.binned_statistic(df['z'], df['e'], statistic=np.nanmean, bins=binedges)
+Estd, bin_edges, binnumber = stats.binned_statistic(df['z'], df['e'], statistic=np.nanstd, bins=binedges)
+
 ax = plt.subplot2grid((4,4), (0,0), colspan=1,rowspan=4)
-plt.plot(df['velprof'],df['z'],'b.')
+plt.plot(df['e'],df['z'],'b.')
 plt.plot(Emean,Zcenter,color = 'grey',marker='none',linestyle='-',linewidth=2,alpha=0.8,label ='Emean')
 plt.axvline(x=0.1, color='r', linestyle='--')
 plt.axvline(x=-0.1, color='r', linestyle='--')
