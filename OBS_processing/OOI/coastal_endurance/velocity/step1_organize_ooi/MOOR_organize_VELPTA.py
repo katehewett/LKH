@@ -11,7 +11,10 @@ import xarray as xr
 import numpy as np
 import pandas as pd 
 import matplotlib.pyplot as plt
+import posixpath 
+from lo_tools import Lfun
 
+Ldir = Lfun.Lstart()
 #############################################################
 # define a find duplicate function for QC of vel data below 
 # we know there are duplicate values from looking at the data 
@@ -27,16 +30,29 @@ def find_duplicate_indices(list_):
 #############################################################
 
 moor = 'CE09OSSM'
-#loco = 'surfacebuoy'
+moor = 'CE07SHSM'
+moor ='CE06ISSM'
+
+loco = 'surfacebuoy'
 loco = 'nsif'
 
 in_dir = Ldir['parent'] / 'LKH_data' / 'OOI' / 'CE' / 'coastal_moorings' / moor / 'velocity' / loco 
 
 if loco == 'nsif':
-    fn_in = posixpath.join(in_dir, 'ooi-ce09ossm-rid26-04-velpta000_21b5_1859_99b7.nc') 
+    if moor == 'CE09OSSM':
+        fn_in = posixpath.join(in_dir, 'ooi-ce09ossm-rid26-04-velpta000_21b5_1859_99b7.nc') 
+    if moor == 'CE07SHSM':
+        fn_in = posixpath.join(in_dir, 'ooi-ce07shsm-rid26-04-velpta000_21b5_1859_99b7.nc')
+    if moor == 'CE06ISSM':
+        fn_in = posixpath.join(in_dir, 'ooi-ce06issm-rid16-04-velpta000_21b5_1859_99b7.nc')
 
 if loco == 'surfacebuoy':
-    fn_in = posixpath.join(in_dir, 'ooi-ce09ossm-sbd11-04-velpta000_466c_6a3c_a582.nc') 
+    if moor == 'CE09OSSM':
+        fn_in = posixpath.join(in_dir, 'ooi-ce09ossm-sbd11-04-velpta000_466c_6a3c_a582.nc') 
+    if moor == 'CE07SHSM':
+        fn_in = posixpath.join(in_dir, 'ooi-ce07shsm-sbd11-04-velpta000_21b5_1859_99b7.nc')
+    if moor == 'CE06ISSM':
+        fn_in = posixpath.join(in_dir, 'ooi-ce06issm-sbd17-04-velpta000_21b5_1859_99b7.nc')
 
 ds = xr.open_dataset(fn_in, decode_times=True)
 
@@ -79,24 +95,27 @@ if np.all(~duplicates):
 ###############################################################################################################################
 # remove big spikes 
 ub = ds.eastward_sea_water_velocity.values
+'''
 umean = np.nanmean(ub,axis=0)
 ustd = np.nanstd(ub,axis=0)
-uhigh = umean+7*ustd
-ulow = umean-7*ustd
+uhigh = umean+10*ustd
+ulow = umean-10*ustd
 ub[(ub<ulow) | (ub>uhigh)] = np.nan
-
+'''
 vb = ds.northward_sea_water_velocity.values
+'''
 vmean = np.nanmean(vb,axis=0)
 vstd = np.nanstd(vb,axis=0)
-vhigh = vmean+7*vstd
-vlow = vmean-7*vstd
+vhigh = vmean+10*vstd
+vlow = vmean-10*vstd
 vb[(vb<vlow) | (vb>vhigh)] = np.nan
-
+'''
 wb = ds.upward_sea_water_velocity.values
+'''
 wmean = np.nanmean(wb,axis=0)
 wstd = np.nanstd(wb,axis=0)
-whigh = wmean+7*wstd
-wlow = wmean-7*wstd
+whigh = wmean+10*wstd
+wlow = wmean-10*wstd
 wb[(wb<wlow) | (wb>whigh)] = np.nan
 
 condition1 = (wb<wlow) | (wb>whigh)
@@ -108,7 +127,7 @@ ub[conditions==True] = np.nan
 vb[conditions==True] = np.nan 
 wb[conditions==True] = np.nan 
 wb[condition1==True] = np.nan
-
+'''
 plt.plot(ot,df['u'],'k.-')
 plt.plot(ot,ub,'r.-')
 
