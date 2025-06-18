@@ -54,15 +54,15 @@ An inventory of velocity data (+instruments +named files) are located here:
 Once we have all the velcoity data from the WA OOI line [insert photo]
 
 [make whats there plot]
+The crazy long time was from np.nanmean instead of 'mean' in binned stats!! update readme and code descriptions. ommmghyd
 
 Some instruments look like they have been QC'd a little more than others. This is a less rigirous QC just so that we can compare LO output with OOI velocities.   
+**Step 1:**
 1. **(A)** Remove spots where the Z are way off. It looks like a flag value of -999 and/or -9999 was used, but then the bins were saved instead of deleting. If this was the case, the whole WC value for that timestamp was dropped. **(B)** Remove duplicates: There are ~104k+ duplicates because of a double saving error. For a subset of time there are raw binned velocities saved and velocities saved with 10 decimal spaces. 
-2. Remove 10*STD crazy outliers from each instrument type.  
-
-
-3. Take out the weird profile in XXX
+2. Remove where |Error| > 0.1 (ADCP only)
+3. Calc Mean+7*STD outliers per bin and remove values that exceed threshold. 
 4. Re-bin data so we can take daily averages and process. 
-5. Run a spike test 
+
 
 
 ---
