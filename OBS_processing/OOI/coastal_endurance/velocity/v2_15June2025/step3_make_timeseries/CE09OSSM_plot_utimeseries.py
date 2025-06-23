@@ -45,6 +45,8 @@ fn = moor + '_' + str(thisyr) + '.01.01_' + str(thisyr) + '.12.31.nc'
 LO_in = posixpath.join(in_dir,fn)
 LO_ds = xr.open_dataset(LO_in, decode_times=True)  
 
+sys.exit() 
+
 LOot = pd.to_datetime(LO_ds.ocean_time)
 #LOz1 = np.nanmean(LO_ds.z_rho.values[:,(27,28,29)])
 if vel == 'u':
